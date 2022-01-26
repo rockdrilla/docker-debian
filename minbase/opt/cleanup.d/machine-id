@@ -1,0 +1,12 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2021-2022, Konstantin Demin
+
+set -e
+
+[ -z "${VERBOSE}" ] || set -xv
+
+echo uninitialized > /etc/machine-id
+
+rm -f \
+  /var/lib/dbus/machine-id \

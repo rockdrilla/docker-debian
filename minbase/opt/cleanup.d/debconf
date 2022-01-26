@@ -1,0 +1,17 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2021-2022, Konstantin Demin
+
+set -e
+
+[ -z "${VERBOSE}" ] || set -xv
+
+## remove i18n from templates
+sed -i -E \
+  -e '/\.[Uu][Tt][Ff]-?8:/d' \
+/var/cache/debconf/templates.dat
+
+unset XGLOB_PIPE XGLOB_DIRS
+/opt/xglob.sh /var/cache/debconf <<-EOF
+	delete=*-old
+EOF

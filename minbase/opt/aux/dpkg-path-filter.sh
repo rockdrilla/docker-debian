@@ -1,0 +1,244 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2021-2022, Konstantin Demin
+
+set -f
+
+[ -z "${VERBOSE}" ] || set -xv
+
+skip_reconfig='^(base-files)$'
+
+dpkg_info='/var/lib/dpkg/info'
+dpkg_divert='/var/lib/dpkg/diversions'
+shallow_cfg='/opt/cleanup.d/dpkg.cfg.d'
+
+re_path='^\s*(path-((ex|in)clude))(=|\s+)(["'"'"']?)(\S.*)\5\s*$'
+sed_path_own='/'"${re_path}"'/{s//\1=\6/p}'
+sed_path_xglob_p1='/'"${re_path}"'/{s//\2=\6/p}'
+sed_path_xglob_p2='s/^exclude/delete/;s/^include/keep/'
+
+## internal methods
+case "$1" in
+--shallow)
+	## cut away interesting rules from dpkg configuration
+	## to separate ("shallow") config
+
+	## $1 - unused
+	## $2 - conf file under /etc/dpkg/
+
+	conf="$2"
+	name="${conf##*/}"
+	if [ "${conf}" = /etc/dpkg/dpkg.cfg ] ; then
+		name='dpkg-topmost'
+	fi
+
+	t=$(mktemp -p "${TMP_D}")
+
+	## reformat and save rules in separate file
+	## reuse existing file if any
+	## sort and remove duplicates
+	for i in "${conf}" "${shallow_cfg}/${name}" ; do
+		[ -s "$i" ] || continue
+		sed -En "${sed_path_own}" "$i"
+	done \
+	| sort -uV > "$t"
+
+	## store new config
+	cat < "$t" > "${shallow_cfg}/${name}"
+	rm -f "$t"
+
+	## cut rules (and empty lines) from original file
+	sed -i -E '/'"${re_path}"'/d' "${conf}"
+	sed -i -E '/^\s*$/d' "${conf}"
+
+	## if it became empty - delete it
+	if ! [ -s "${conf}" ] ; then
+		rm -f "${conf}"
+	fi
+
+	exit 0
+;;
+--divert)
+	## analyze dpkg diversion
+
+	## $1 - unused
+	## $2 - line number in /var/lib/dpkg/diversions
+
+	n="$2"
+	x=$(( n % 3 ))
+	case "$x" in
+	1)
+		## we're matched on replacement file
+		## => get package name
+		x=$(( n + 2 ))
+		x=$(sed -n "${x}p" "${dpkg_divert}")
+		case "$x" in
+		:)
+			## it is local diversion
+		;;
+		*)
+			## diversion was introduced by package
+			t=$(mktemp -p "${PKG_D}")
+			echo "$x" > "$t"
+		;;
+		esac
+	;;
+	2)
+		## we're matched on diverted file
+		## => save pathspec to further investigation
+		x=$(( n - 1 ))
+		t=$(mktemp -p "${DIVERT_D}")
+		sed -n "${x}p" "${dpkg_divert}" > "$t"
+	;;
+	*)
+		## this should not happen at all - we're matched on package name =/
+		x=$(sed -n "${n}p" "${dpkg_divert}")
+		echo "ERROR: '$x' was matched as pathspec" >&2
+	;;
+	esac
+
+	exit 0
+;;
+esac
+
+export DEBCONF_NONINTERACTIVE_SEEN=true
+export DEBIAN_FRONTEND=noninteractive
+export DEBIAN_PRIORITY=critical
+
+## work directory
+w=$(mktemp -d) ; : "${w:?}"
+
+if [ -z "${NPROC}" ] ; then
+	NPROC=$(nproc)
+	NPROC=$(( NPROC + (NPROC + 1)/2 ))
+fi
+
+{
+	if [ $# = 0 ] ; then
+		## (unconditionally) create directory with configs
+		if ! [ -d "${shallow_cfg}" ] ; then
+			mkdir -p "${shallow_cfg}" 2>/dev/null
+		fi
+
+		list_dpkg_cfg_files() {
+			grep -ERl "${re_path}" /etc/dpkg/dpkg.cfg /etc/dpkg/dpkg.cfg.d 2>/dev/null \
+			| grep -Ev '\.dpkg-(dist|new|old|tmp)$'
+		}
+
+		if [ -w "${shallow_cfg}" ] ; then
+			## list files with related configuration (but skip stalled configs)
+			list_dpkg_cfg_files > "$w/cfg.update"
+
+			mkdir -p "$w/shallow.d"
+
+			## invoke internal method
+			TMP_D="$w/shallow.d" \
+			xargs -d '\n' -r -n 1 -P "${NPROC}" "$0" --shallow \
+			< "$w/cfg.update"
+
+			rm -rf "$w/cfg.update" "$w/shallow.d"
+		fi
+
+		list_dpkg_cfg_files
+		if [ -d "${shallow_cfg}" ] ; then
+			find "${shallow_cfg}/" -maxdepth 1 -type f
+		fi
+	else
+		for i ; do
+			[ -s "$i" ] || continue
+			printf '%s\n' "$i"
+		done
+	fi
+## below: merge all rules and reformat them for xglob.sh
+} \
+| xargs -d '\n' -r sed -En "${sed_path_xglob_p1}" \
+| sed -E "${sed_path_xglob_p2}" \
+| sort -uV \
+> "$w/xglob"
+
+## nothing to filter at all
+if ! [ -s "$w/xglob" ] ; then
+	rm -rf "$w"
+	exit 0
+fi
+
+## reformat dpkg's globs to "normal" globs
+## TODO: discover more cases
+sed -i -E 's#(^|/)\*($|/)#\1**\2#g;' "$w/xglob"
+
+## dry-run xglob.sh to get list of ready-to-delete files
+unset XGLOB_DIRS
+XGLOB_PIPE=1 \
+/opt/xglob.sh / < "$w/xglob" > "$w/list"
+rm -f "$w/xglob"
+
+## nothing to filter at all (again?)
+if ! [ -s "$w/list" ] ; then
+	rm -rf "$w"
+	exit 0
+fi
+
+## remove files immediately
+xargs -d '\n' -r rm -f < "$w/list"
+
+r=0
+if [ -z "${SKIP_DPKG_RECONF}" ] ; then
+	## search for other affected packages within diversions
+	mkdir -p "$w/pkg1.d" "$w/diverted.d"
+
+	if [ -s "${dpkg_divert}" ] ; then
+		## invoke internal method
+		grep -Fxhn -f "$w/list" "${dpkg_divert}" \
+		| cut -d : -f 1 \
+		> "$w/divertions"
+
+		PKG_D="$w/pkg1.d" \
+		DIVERT_D="$w/diverted.d" \
+		xargs -d '\n' -r -n 1 -P "${NPROC}" "$0" --divert \
+		< "$w/divertions"
+		rm -f "$w/divertions"
+	fi
+
+	## merge results to "package list"
+	find "$w/pkg1.d" -mindepth 1 -type f -exec cat '{}' '+' \
+	| sort -uV > "$w/pkg1"
+	rm -rf "$w/pkg1.d"
+
+	## merge results to "pathspec list"
+	find "$w/diverted.d" -mindepth 1 -type f -exec cat '{}' '+' \
+	| sort -uV > "$w/diverted"
+	rm -rf "$w/diverted.d"
+
+	list_affected_by() {
+		find "${dpkg_info}/" -regextype egrep \
+		  -regex '^.+\.(conffiles|list)$' \
+		  -exec grep -Fxl -f "$1" '{}' '+' \
+		| sed -E 's/^.*\/([^/]+)\.[a-z]+$/\1/'
+	}
+
+	## list affected packages
+	list_affected_by "$w/list" \
+	> "$w/pkg2"
+
+	## list packages affected by match on diverted file
+	: > "$w/pkg3"
+	if [ -s "$w/diverted" ] ; then
+		list_affected_by "$w/diverted" \
+		> "$w/pkg3"
+	fi
+
+	## merge package lists
+	cat "$w/pkg1" "$w/pkg2" "$w/pkg3" \
+	| sort -uV \
+	| grep -Ev "${skip_reconfig}" \
+	> "$w/affected"
+	rm -f "$w/pkg1" "$w/pkg2" "$w/pkg3"
+
+	## reconfigure affected packages
+	xargs -r /opt/quiet-if-ok.sh dpkg-reconfigure --force < "$w/affected"
+	r=$?
+fi
+
+rm -rf "$w"
+
+exit $r

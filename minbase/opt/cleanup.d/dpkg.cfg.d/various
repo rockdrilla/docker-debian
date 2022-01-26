@@ -1,0 +1,2 @@
+## real binary after calling dpkg-divert against debianutils
+path-exclude=/usr/bin/ischroot.*

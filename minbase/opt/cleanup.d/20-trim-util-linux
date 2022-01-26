@@ -1,0 +1,62 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2021-2022, Konstantin Demin
+
+set -ef
+
+[ -z "${VERBOSE}" ] || set -xv
+
+## trim "util-linux" package
+
+allowed_bin='choom chrt fallocate findmnt flock getopt ionice ipcmk ipcrm ipcs lsipc lslocks lsmem lsns more mountpoint namei nsenter pg prlimit rev setpriv setsid setterm taskset unshare whereis'
+allowed_sbin='runuser'
+dpkg_list='/var/lib/dpkg/info/util-linux.list'
+conf='/opt/cleanup.d/dpkg.cfg.d/util-linux.auto'
+
+if ! [ -s "${dpkg_list}" ] ; then
+	exit 0
+fi
+
+w=$(mktemp -d) ; : "${w:?}"
+
+allowed_bin='/bin/('$(echo ${allowed_bin} | tr ' ' '|')')$'
+allowed_sbin='/sbin/('$(echo ${allowed_sbin} | tr ' ' '|')')$'
+
+## list all binaries from /bin and /usr/bin
+grep -F /bin/ "${dpkg_list}" \
+| grep -Ev "${allowed_bin}" \
+| sed -E 's/^/path-exclude=/' \
+>> "$w/conf"
+
+## list all binaries from /sbin and /usr/sbin
+grep -F /sbin/ "${dpkg_list}" \
+| grep -Ev "${allowed_sbin}" \
+| sed -E 's/^/path-exclude=/' \
+>> "$w/conf"
+
+## merge lists
+{
+	if [ -s "${conf}" ] ; then
+		cat "${conf}"
+	fi
+	cat "$w/conf"
+} | sort -uV > "$w/new"
+
+## perform cleanup
+/opt/aux/dpkg-path-filter.sh "$w/new"
+
+## save result if applicable
+while : ; do
+	if [ -e "${conf}" ] ; then
+		[ -w "${conf}" ] || break
+
+		if cmp -s "$w/new" "${conf}" ; then
+			break
+		fi
+	fi
+
+	cat < "$w/new" > "${conf}" || :
+	break
+done
+
+rm -rf "$w"

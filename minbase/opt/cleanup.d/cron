@@ -1,0 +1,14 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2021-2022, Konstantin Demin
+
+set -ef
+
+[ -z "${VERBOSE}" ] || set -xv
+
+## truncate placeholders (if any)
+find /etc -wholename '/etc/cron*/.placeholder' -type f -exec truncate -s 0 '{}' '+'
+
+## remove unwanted cron files (if any)
+unset XGLOB_DIRS XGLOB_PIPE
+/opt/xglob.sh /etc /opt/cleanup.d/extra.d/cron </dev/null

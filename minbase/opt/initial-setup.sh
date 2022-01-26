@@ -1,0 +1,1 @@
+/opt/aux/initial-setup.sh

@@ -1,0 +1,30 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2021-2022, Konstantin Demin
+
+set -e
+
+[ -z "${VERBOSE}" ] || set -xv
+
+rm -rf \
+  /var/lib/apt/lists/auxfiles \
+
+truncate -s 0 \
+  /var/lib/dpkg/available \
+
+unset XGLOB_PIPE XGLOB_DIRS
+
+/opt/xglob.sh /var/lib/apt <<-EOF
+	delete=listchanges*
+	delete=lists/**
+	keep=lists/lock
+EOF
+
+/opt/xglob.sh /var/lib/dpkg <<-EOF
+	delete=*-old
+EOF
+
+/opt/xglob.sh /var/cache/apt <<-EOF
+	delete=**
+	keep=archives/lock
+EOF

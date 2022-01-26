@@ -1,0 +1,22 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2021-2022, Konstantin Demin
+
+set -ef
+
+[ -z "${VERBOSE}" ] || set -xv
+
+## truncate special files
+## delete other files
+
+unset XGLOB_PIPE XGLOB_DIRS
+/opt/xglob.sh /var/log - /opt/cleanup.d/extra.d/var-log <<-EOF
+	delete=**
+	keep=btmp
+	keep=wtmp
+	keep=faillog
+	keep=lastlog
+	keep=tallylog
+EOF
+
+find /var/log/ -xdev -type f -exec truncate -s 0 '{}' '+'

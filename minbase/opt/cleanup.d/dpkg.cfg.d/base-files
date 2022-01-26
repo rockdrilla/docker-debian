@@ -1,0 +1,2 @@
+path-exclude=/usr/share/base-files/*
+path-exclude=/usr/share/common-licenses/*

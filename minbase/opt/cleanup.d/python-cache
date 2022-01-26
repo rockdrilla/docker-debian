@@ -1,0 +1,15 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2021-2022, Konstantin Demin
+
+set -ef
+
+[ -z "${VERBOSE}" ] || set -xv
+
+unset XGLOB_PIPE
+XGLOB_DIRS=1 \
+/opt/xglob.sh / - /opt/cleanup.d/extra.d/python-cache <<-EOF
+	delete=**/*.pyc
+	delete=**/*.pyo
+	delete=**/__pycache__
+EOF

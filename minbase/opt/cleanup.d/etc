@@ -1,0 +1,19 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2021-2022, Konstantin Demin
+
+set -ef
+
+[ -z "${VERBOSE}" ] || set -xv
+
+unset XGLOB_PIPE
+XGLOB_DIRS=1 \
+/opt/xglob.sh /etc - /opt/cleanup.d/extra.d/etc <<-EOF
+	delete=.pwd.lock
+	delete=group-
+	delete=gshadow-
+	delete=passwd-
+	delete=shadow-
+	delete=subgid-
+	delete=subuid-
+EOF

@@ -1,0 +1,6 @@
+path-exclude=/usr/share/bash-completion*/*
+path-exclude=/usr/share/fish/completion*/*
+path-exclude=/usr/share/zsh/**/*.zwc
+path-exclude=/usr/share/zsh/vendor-completion*/*
+path-exclude=/usr/share/zsh/functions/Completion/**/*
+path-exclude=/usr/share/yash/completion*/*

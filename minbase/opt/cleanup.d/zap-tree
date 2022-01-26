@@ -1,0 +1,15 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2021-2022, Konstantin Demin
+
+set -ef
+
+[ -z "${VERBOSE}" ] || set -xv
+
+export ZAP=0
+sed -En '/^: /s/^: //p' "$0" | xargs -r /opt/zap-tree.sh
+exit
+## eliminate empty directories under certain paths
+## append new entries below (one per line) with ": " in beginning
+: /usr/share/*
+: /usr/local/share/*

@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2021-2022, Konstantin Demin
+
+ARG CI_REGISTRY=docker.io
+ARG CI_DIRECTORY=rockdrilla
+
+ARG DISTRO=debian
+ARG SUITE=latest
+ARG IMAGE_FROM=${DISTRO}-minbase:${SUITE}
+
+#################################################
+FROM ${CI_REGISTRY}/${CI_DIRECTORY}/${IMAGE_FROM}
+SHELL [ "/bin/sh", "-ec" ]
+
+RUN /opt/apt.sh install gcc ; \
+    /opt/cleanup.sh
