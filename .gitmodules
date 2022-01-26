@@ -1,0 +1,3 @@
+[submodule "distro-info"]
+	path = distro-info
+	url = https://github.com/rockdrilla/distro-info-wrapper.git
