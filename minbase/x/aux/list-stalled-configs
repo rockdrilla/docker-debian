@@ -4,6 +4,8 @@
 
 [ -z "${VERBOSE}" ] || set -xv
 
+t=$(mktemp) ; : "${t:?}"
+
 ## list stalled configs (if any)
 {
 	## sysroot_skiplist='^/(dev|proc|run|sys)$'
@@ -14,6 +16,12 @@
 	  ')'
 } \
 | sort -V \
-| sed -E '1i \## stalled configs:' 1>&2
+> "$t"
 
+if [ -s "$t" ] ; then
+	echo '## stalled configs:' 1>&2
+	cat "$t"
+fi
+
+rm -f "$t"
 exit 0
