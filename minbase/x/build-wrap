@@ -18,7 +18,7 @@ case "$1" in
 	if [ -z "$*" ] ; then
 		echo 'nothing was selected as build-deps' 1>&2
 	else
-		if ! ( /x/apt ${BUILD_DEP_METHOD:-install} $* ; ) </dev/null 1>&2 ; then
+		if ! ( /x/apt ${BUILDWRAP_METHOD:-install} $* ; ) </dev/null 1>&2 ; then
 			rm -rf "$w"
 			exit 1
 		fi
@@ -80,7 +80,7 @@ case "$1" in
 ;;
 esac
 
-w=$("$0" --begin ${BUILD_DEP})
+w=$("$0" --begin ${BUILDWRAP_DEPS})
 
 set +e
 "$@"
