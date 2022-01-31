@@ -48,6 +48,14 @@ case "$1" in
 		exit 1
 	fi
 
+	x="$w/keep"
+	if [ -s "$x" ] ; then
+		set +e
+		grep -Fxv -f "$w/installed.0" "$x" > "$x.manual"
+		set -e
+		xargs -r /x/quiet apt-mark manual < "$x.manual"
+	fi
+
 	/x/apt list-installed > "$w/installed.2"
 	/x/apt list-manual    > "$w/manual.2"
 
@@ -81,6 +89,9 @@ case "$1" in
 esac
 
 w=$("$0" --begin ${BUILDWRAP_DEPS})
+
+export BUILDWRAP_KEEP="$w/keep"
+: > "${BUILDWRAP_KEEP}"
 
 set +e
 "$@"
