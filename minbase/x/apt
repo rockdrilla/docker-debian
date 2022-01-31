@@ -132,11 +132,20 @@ dpkg_list_installed() {
 }
 
 dpkg_list_martians() {
+	t=$(mktemp) ; : "${t:?}"
+
 	dpkg-query -W \
 	    -f='${binary:Package} ${Version}|${db:Status-Abbrev}\n' \
 	| mawk -F '|' '{ if ($2 != "ii ") print $1 ", state=\"" $2 "\"" ; }' \
 	| sort -V \
-	| sed -E '1i \## "martian" packages (unusual state):'
+	> "$t"
+
+	if [ -s "$t" ] ; then
+		echo '## "martian" packages (unusual state):' 1>&2
+		cat "$t"
+	fi
+
+	rm -f "$t"
 }
 
 apt_list_auto() {
