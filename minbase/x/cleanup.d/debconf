@@ -12,6 +12,6 @@ sed -i -E \
 /var/cache/debconf/templates.dat
 
 unset XGLOB_PIPE XGLOB_DIRS
-/opt/xglob.sh /var/cache/debconf <<-EOF
+/x/glob /var/cache/debconf <<-EOF
 	delete=*-old
 EOF

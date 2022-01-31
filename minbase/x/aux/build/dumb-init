@@ -4,6 +4,14 @@
 
 set -ef
 
+bin='dumb-init'
+dst_dir='/x/bin'
+test_bin() { "$1/${bin}" -V 2>/dev/null ; }
+
+if test_bin "${dst_dir}" ; then
+	exit
+fi
+
 ## temp directory
 w=$(mktemp -d) ; : "${w:?}" ; cd "$w"
 
@@ -24,12 +32,12 @@ done
 
 (
 	set -x
-	gcc -o dumb-init dumb-init.c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS}
+	gcc -o "${bin}" dumb-init.c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS}
 )
-chmod 0755 dumb-init
-./dumb-init -V 2>/dev/null
-cp -f dumb-init /
-stat -c '%A %s %n' /dumb-init
+chmod 0755 "${bin}"
+test_bin .
+cp -f "${bin}" "${dst_dir}/"
+stat -c '%A %s %n' "${dst_dir}/${bin}"
 
 cd /
 rm -rf "$w"

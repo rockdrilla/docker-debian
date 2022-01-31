@@ -6,4 +6,4 @@ set -e
 
 [ -z "${VERBOSE}" ] || set -xv
 
-/opt/apt.sh autoremove
+/x/apt autoremove

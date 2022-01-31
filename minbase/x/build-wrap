@@ -12,19 +12,19 @@ case "$1" in
 
 	w=$(mktemp -d) ; : "${w:?}"
 
-	/opt/apt.sh list-installed > "$w/installed.0"
-	/opt/apt.sh list-manual    > "$w/manual.0"
+	/x/apt list-installed > "$w/installed.0"
+	/x/apt list-manual    > "$w/manual.0"
 
 	if [ -z "$*" ] ; then
 		echo 'nothing was selected as build-deps' 1>&2
 	else
-		if ! ( /opt/apt.sh ${BUILD_DEP_METHOD:-install} $* ; ) </dev/null 1>&2 ; then
+		if ! ( /x/apt ${BUILD_DEP_METHOD:-install} $* ; ) </dev/null 1>&2 ; then
 			rm -rf "$w"
 			exit 1
 		fi
 
-		/opt/apt.sh list-installed > "$w/installed.1"
-		/opt/apt.sh list-manual    > "$w/manual.1"
+		/x/apt list-installed > "$w/installed.1"
+		/x/apt list-manual    > "$w/manual.1"
 	fi
 
 	echo "$w"
@@ -48,8 +48,8 @@ case "$1" in
 		exit 1
 	fi
 
-	/opt/apt.sh list-installed > "$w/installed.2"
-	/opt/apt.sh list-manual    > "$w/manual.2"
+	/x/apt list-installed > "$w/installed.2"
+	/x/apt list-manual    > "$w/manual.2"
 
 	set +e
 
@@ -73,7 +73,7 @@ case "$1" in
 	fi \
 	> "$w/pkg.remove"
 
-	xargs -r /opt/apt.sh purge < "$w/pkg.remove" 1>&2
+	xargs -r /x/apt purge < "$w/pkg.remove" 1>&2
 
 	rm -rf "$w"
 	exit 0

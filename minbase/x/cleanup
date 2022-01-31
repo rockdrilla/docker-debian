@@ -16,17 +16,17 @@ export TEMP=/tmp
 
 du -xsh /
 
-run-parts ${VERBOSE:+--verbose} --exit-on-error /opt/cleanup.d
+run-parts ${VERBOSE:+--verbose} --exit-on-error /x/cleanup.d
 r=$?
 
-/opt/aux/flush-run.sh
-/opt/aux/flush-tmp.sh
+/x/aux/flush-run
+/x/aux/flush-tmp
 
 ## list stalled configs (if any)
-/opt/aux/list-stalled-configs.sh
+/x/aux/list-stalled-configs
 
 ## list broken symlinks (if any)
-/opt/aux/list-broken-symlinks.sh
+/x/aux/list-broken-symlinks
 
 du -xsh /
 

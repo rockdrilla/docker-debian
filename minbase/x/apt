@@ -70,7 +70,7 @@ apt|aptitude) ;;
 esac
 
 ## make script quiet as possible/desired
-_q() { /opt/quiet-if-ok.sh "$@" ; }
+_q() { /x/quiet "$@" ; }
 _cq=
 if [ -n "$Q" ] ; then _cq=_q ; fi
 

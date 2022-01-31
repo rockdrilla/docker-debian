@@ -8,7 +8,7 @@ set -ef
 
 unset XGLOB_PIPE
 XGLOB_DIRS=1 \
-/opt/xglob.sh / - /opt/cleanup.d/extra.d/python-cache <<-EOF
+/x/glob / - /x/conf/cleanup.d/python-cache <<-EOF
 	delete=**/*.pyc
 	delete=**/*.pyo
 	delete=**/__pycache__

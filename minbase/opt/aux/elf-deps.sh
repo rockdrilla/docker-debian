@@ -9,7 +9,7 @@ set -ef
 has_file=1
 if ! command -v file >/dev/null ; then
 	has_file=0
-	/opt/apt.sh install file >/dev/null 2>&1
+	/x/apt install file >/dev/null 2>&1
 fi
 
 ldd_out=$(mktemp)
@@ -54,7 +54,7 @@ grep -Fv ' => not found' \
 rm "${ldd_out}"
 
 if [ ${has_file} = 0 ] ; then
-	/opt/apt.sh remove file >/dev/null 2>/dev/null
+	/x/apt remove file >/dev/null 2>/dev/null
 fi
 
 ldd_unresolved=0

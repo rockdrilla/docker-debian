@@ -7,7 +7,7 @@ set -e
 [ -z "${VERBOSE}" ] || set -xv
 
 ## remove aptitude (with many thanks)
-Q=1 /opt/apt.sh purge aptitude
+Q=1 /x/apt purge aptitude
 
 rm -rf \
   /var/lib/aptitude \

@@ -13,7 +13,7 @@ msg() {
 
 if ! command -v setpriv >/dev/null ; then
 	msg "system warning: \`setpriv' is missing, running with \`su-exec'"
-	exec su-exec "$@"
+	exec /x/bin/su-exec "$@"
 fi
 
 is_option() {

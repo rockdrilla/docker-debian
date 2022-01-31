@@ -45,7 +45,7 @@ mv /etc/apt/apt.conf.d/99mmdebstrap  /etc/apt/apt.conf.d/docker
 mv /etc/dpkg/dpkg.cfg.d/99mmdebstrap /etc/dpkg/dpkg.cfg.d/docker
 
 ## generic configuration
-. /opt/aux/initial-setup.sh
+. /x/aux/initial-setup.sh
 
 ## approach to minimize manually installed packages list
 dpkg-query -W \
@@ -72,11 +72,11 @@ grep -Fvx -f /tmp/pkg.essential \
 > /tmp/pkg.manual.regular
 
 ## apt is manually installed (by mmdebstrap but it doesn't matter)
-## ${pkg_aux} is defined in /opt/aux/initial-setup.sh to avoid duplication
+## ${pkg_aux} is defined in /x/aux/initial-setup.sh to avoid duplication
 echo apt ${pkg_aux} \
 | tr ' ' '\n' \
 | grep -Fvx -f - /tmp/pkg.manual.regular \
-| xargs -r /opt/quiet-if-ok.sh apt-mark auto
+| xargs -r /x/quiet apt-mark auto
 
 ## fix ownership:
 ## mmdebstrap's actions 'sync-in' and 'copy-in' preserves source user/group
@@ -94,4 +94,4 @@ fix_ownership() {
 [ "$5" = 0 ] || fix_ownership "-gid $5|chgrp -h 0"
 
 ## run cleanup
-exec /opt/cleanup.sh
+exec /x/cleanup

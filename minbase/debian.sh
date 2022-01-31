@@ -160,7 +160,7 @@ eval "$f" ; unset f
 bc --hostname "${distro}"
 bc --label "tarball.ts=${ts}"
 bc --label "tarball.hash=${tar_sha256}"
-bc --entrypoint '["/dumb-init", "--"]'
+bc --entrypoint '["/x/bin/dumb-init", "--"]'
 bc --workingdir /work
 bc --cmd /bin/sh
 

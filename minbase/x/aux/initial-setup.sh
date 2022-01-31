@@ -12,7 +12,7 @@ pkg_aux='apt-utils ca-certificates less lsof netbase ncurses-base procps psmisc 
 rm -f /usr/local/share/ca-certificates/.keep
 find /opt /x -name .keep -type f -delete
 
-_q() { /opt/quiet-if-ok.sh "$@" ; }
+_q() { /x/quiet "$@" ; }
 
 ## $1 - path
 ## $2 - install symlink to another file (optional)
@@ -90,9 +90,9 @@ divert /usr/bin/deb-systemd-helper
 divert /usr/bin/deb-systemd-invoke
 
 ## forced apt/dpkg cleanup
-/opt/cleanup.d/apt-dpkg-related
+/x/cleanup.d/apt-dpkg-related
 ## update package lists and install auxiliary packages
-Q=1 /opt/apt.sh install ${pkg_aux}
+Q=1 /x/apt install ${pkg_aux}
 ## mark them as manual
 _q apt-mark manual ${pkg_aux}
 
@@ -105,25 +105,25 @@ find /usr/share/vim/ -name debian.vim \
 | xargs -d '\n' -r touch
 
 ## timezone
-[ -z "${TZ}" ] || /opt/tz.sh "${TZ}"
+[ -z "${TZ}" ] || /x/tz "${TZ}"
 
 ## build supplemental utilities
 
-w=$(Q=1 /opt/build-dep.sh --begin curl dpkg-dev gcc libc6-dev)
+w=$(Q=1 /x/build-wrap --begin curl dpkg-dev gcc libc6-dev)
 
 ## build dumb-init
-/opt/aux/dumb-init.build.sh
+/x/aux/build/dumb-init
 
 ## build su-exec
-/opt/aux/su-exec.build.sh
+/x/aux/build/su-exec
 
 ## build own supplemental utility
-/opt/aux/x0.build.sh
+/x/aux/build/x0
 
-Q=1 /opt/build-dep.sh --end "$w"
+Q=1 /x/build-wrap --end "$w"
 
 ## list packages with unusual state (if any)
-/opt/apt.sh list-martians
+/x/apt list-martians
 
 ## like '/workspace' in kaniko, but less letters to type :)
 install -d -m 01777 /work

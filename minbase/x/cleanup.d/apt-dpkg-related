@@ -14,17 +14,17 @@ truncate -s 0 \
 
 unset XGLOB_PIPE XGLOB_DIRS
 
-/opt/xglob.sh /var/lib/apt <<-EOF
+/x/glob /var/lib/apt <<-EOF
 	delete=listchanges*
 	delete=lists/**
 	keep=lists/lock
 EOF
 
-/opt/xglob.sh /var/lib/dpkg <<-EOF
+/x/glob /var/lib/dpkg <<-EOF
 	delete=*-old
 EOF
 
-/opt/xglob.sh /var/cache/apt <<-EOF
+/x/glob /var/cache/apt <<-EOF
 	delete=**
 	keep=archives/lock
 EOF

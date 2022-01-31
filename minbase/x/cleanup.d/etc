@@ -8,7 +8,7 @@ set -ef
 
 unset XGLOB_PIPE
 XGLOB_DIRS=1 \
-/opt/xglob.sh /etc - /opt/cleanup.d/extra.d/etc <<-EOF
+/x/glob /etc - /x/conf/cleanup.d/etc <<-EOF
 	delete=.pwd.lock
 	delete=group-
 	delete=gshadow-
