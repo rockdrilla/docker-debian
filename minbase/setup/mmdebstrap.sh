@@ -37,6 +37,7 @@ if [ -d "$1" ] ; then
 fi
 
 ## remove docs (if any)
+find /x -name '*.md' -type f -delete
 find /opt -name '*.md' -type f -delete || :
 
 ## rename apt/dpkg configuration

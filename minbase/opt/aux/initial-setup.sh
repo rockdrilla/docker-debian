@@ -9,8 +9,8 @@ set -e
 pkg_aux='apt-utils ca-certificates less lsof netbase ncurses-base procps psmisc tzdata vim-tiny'
 
 ## remove "keep" files (if any)
-rm -f /opt/cleanup.d/extra.d/.keep \
-      /usr/local/share/ca-certificates/.keep \
+rm -f /usr/local/share/ca-certificates/.keep
+find /opt /x -name .keep -type f -delete
 
 _q() { /opt/quiet-if-ok.sh "$@" ; }
 
