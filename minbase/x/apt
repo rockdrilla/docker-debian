@@ -72,7 +72,10 @@ esac
 ## make script quiet as possible/desired
 _q() { /x/quiet "$@" ; }
 _cq=
-if [ -n "$Q" ] ; then _cq=_q ; fi
+case "$Q" in
+0) ;;
+1) _cq=q ;;
+esac
 
 find_fresh_ts() {
 	{
@@ -141,7 +144,7 @@ dpkg_list_martians() {
 	> "$t"
 
 	if [ -s "$t" ] ; then
-		echo '## "martian" packages (unusual state):' 1>&2
+		echo '# "martian" packages (unusual state):' 1>&2
 		cat "$t"
 	fi
 

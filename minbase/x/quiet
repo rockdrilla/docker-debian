@@ -10,7 +10,7 @@ if [ $r != 0 ] ; then
 	printf '# command:' ; env printf ' %q' "$@" ; echo
 	echo "# return code: $r"
 	if [ -s "$t" ] ; then
-		echo "# output:"
+		echo '# output:'
 		sed -E 's/^(.+)$/#>| \1/;s/^$/#=|/' < "$t"
 	fi
 fi 1>&2

@@ -19,7 +19,7 @@ t=$(mktemp) ; : "${t:?}"
 > "$t"
 
 if [ -s "$t" ] ; then
-	echo '## stalled configs:' 1>&2
+	echo '# stalled configs:' 1>&2
 	cat "$t"
 fi
 
