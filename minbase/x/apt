@@ -82,7 +82,7 @@ find_fresh_ts() {
 	} | sort -rn | head -n 1
 }
 
-apt_update() {
+xapt_update() {
 	## update package lists; may fail sometimes,
 	## e.g. soon-to-release channels like Debian "bullseye" @ 22.04.2021
 	if [ $# = 0 ] ; then
@@ -97,7 +97,7 @@ apt_update() {
 	fi
 }
 
-apt_dpkg_avail_hack() {
+xapt_dpkg_avail_hack() {
 	release=$( ( . /etc/os-release ; echo "${VERSION_CODENAME}" ; ) )
 	dpkg_avail='/var/lib/dpkg/available'
 	## if ${release} is empty then we're on Debian sid or so :)
@@ -148,7 +148,7 @@ dpkg_list_martians() {
 	rm -f "$t"
 }
 
-apt_list_auto() {
+xapt_list_auto() {
 	w=$(mktemp -d) ; : "${w:?}"
 
 	mawk '
@@ -176,7 +176,7 @@ apt_list_auto() {
 	rm -rf "$w"
 }
 
-apt_list_manual() {
+xapt_list_manual() {
 	w=$(mktemp -d) ; : "${w:?}"
 
 	dpkg_list_installed > "$w/all"
@@ -190,13 +190,13 @@ apt_list_manual() {
 
 case "${act}" in
 install|upgrade|safe-upgrade|full-upgrade)
-	apt_update
+	xapt_update
 ;;
 esac
 
 if [ "${flavour}" = aptitude ] ; then
-	apt_update
-	apt_dpkg_avail_hack
+	xapt_update
+	xapt_dpkg_avail_hack
 	apt_install_aptitude
 fi
 
@@ -208,10 +208,10 @@ list-martians)
 	dpkg_list_martians
 ;;
 list-auto)
-	apt_list_auto
+	xapt_list_auto
 ;;
 list-manual)
-	apt_list_manual
+	xapt_list_manual
 ;;
 install-aptitude)
 ;;
@@ -220,7 +220,7 @@ list-*|install-*)
 	exit 1
 ;;
 update)
-	apt_update "$@"
+	xapt_update "$@"
 ;;
 *)
 	case "${flavour}" in
