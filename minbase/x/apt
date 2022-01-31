@@ -118,15 +118,7 @@ xapt_dpkg_avail_hack() {
 	esac
 }
 
-apt_install_aptitude() {
-	if command -v aptitude >/dev/null ; then
-		return 0
-	fi
-
-	_q apt -qq -y install aptitude
-}
-
-dpkg_list_installed() {
+xapt_list_installed() {
 	dpkg-query -W \
 		-f='${binary:Package}:${Architecture}|${db:Status-Abbrev}\n' \
 	| mawk -F '|' '{ if ($2 ~ "^[hi]i ") print $1;}' \
@@ -134,7 +126,7 @@ dpkg_list_installed() {
 	| sort -V
 }
 
-dpkg_list_martians() {
+xapt_list_martians() {
 	t=$(mktemp) ; : "${t:?}"
 
 	dpkg-query -W \
@@ -169,7 +161,7 @@ xapt_list_auto() {
 
 	## fix:
 	## /var/lib/apt/extended_states stores (some) arch:all entries as arch:native
-	dpkg_list_installed \
+	xapt_list_installed \
 	| grep -F ':all' \
 	| cut -d : -f 1 \
 	| xargs -r printf '/^(%s):.+$/{s//\\1:all/}\n' \
@@ -182,13 +174,21 @@ xapt_list_auto() {
 xapt_list_manual() {
 	w=$(mktemp -d) ; : "${w:?}"
 
-	dpkg_list_installed > "$w/all"
+	xapt_list_installed > "$w/all"
 	"$0" list-auto > "$w/auto"
 
 	grep -Fxv -f "$w/auto" \
 	"$w/all"
 
 	rm -rf "$w"
+}
+
+apt_install_aptitude() {
+	if command -v aptitude >/dev/null ; then
+		return 0
+	fi
+
+	_q apt -qq -y install aptitude
 }
 
 case "${act}" in
@@ -205,10 +205,10 @@ fi
 
 case "${act}" in
 list-installed)
-	dpkg_list_installed
+	xapt_list_installed
 ;;
 list-martians)
-	dpkg_list_martians
+	xapt_list_martians
 ;;
 list-auto)
 	xapt_list_auto
