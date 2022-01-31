@@ -37,7 +37,7 @@ name0=$(basename "${name0}")
 
 sha256() { sha256sum -b "$1" | sed -En '/^([[:xdigit:]]+).*$/{s//\L\1/;p;}' ; }
 
-get_meta() { "${dir0}/../distro-info/tool.sh" "$@" ; }
+get_meta() { "${dir0}/../distro-info/simple-csv.sh" "$@" ; }
 suite_from_meta() { cut -d ',' -f 1 | cut -d ' ' -f 1 ; }
 meta=
 suite=
