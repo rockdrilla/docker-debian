@@ -18,7 +18,7 @@ case "$1" in
 	if [ -z "$*" ] ; then
 		echo 'nothing was selected as build-deps' 1>&2
 	else
-		if ! ( /x/apt ${BUILDWRAP_METHOD:-install} $* ; ) </dev/null 1>&2 ; then
+		if ! ( /x/apt ${BUILDWRAP_METHOD:-install} "$@" ; ) </dev/null 1>&2 ; then
 			rm -rf "$w"
 			exit 1
 		fi
