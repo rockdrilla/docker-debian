@@ -6,11 +6,11 @@ ARG CI_DIRECTORY=rockdrilla
 
 ARG DISTRO=debian
 ARG SUITE=latest
-ARG IMAGE_FROM=${DISTRO}-minbase:${SUITE}
+ARG IMAGE_FROM=${CI_DIRECTORY}/${DISTRO}-minbase:${SUITE}
 
 #################################################
-FROM ${CI_REGISTRY}/${CI_DIRECTORY}/${IMAGE_FROM}
+FROM ${CI_REGISTRY}/${IMAGE_FROM}
 SHELL [ "/bin/sh", "-ec" ]
 
-RUN /opt/apt.sh install gcc ; \
-    /opt/cleanup.sh
+RUN /x/apt install gcc ; \
+    /x/cleanup
