@@ -10,7 +10,7 @@ set -ef
 ## delete other files
 
 unset XGLOB_PIPE XGLOB_DIRS
-/x/glob /var/log - /x/conf/cleanup.d/var-log <<-EOF
+/x/glob /var/log - /x/conf/cleanup/var-log <<-EOF
 	delete=**
 	keep=btmp
 	keep=wtmp

@@ -16,7 +16,7 @@ export TEMP=/tmp
 
 du -xsh /
 
-run-parts ${VERBOSE:+--verbose} --exit-on-error /x/cleanup.d
+run-parts ${VERBOSE:+--verbose} --exit-on-error /x/lib/cleanup
 r=$?
 
 /x/aux/flush-run

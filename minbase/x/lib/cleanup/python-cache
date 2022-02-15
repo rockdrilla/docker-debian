@@ -8,12 +8,8 @@ set -ef
 
 unset XGLOB_PIPE
 XGLOB_DIRS=1 \
-/x/glob /etc - /x/conf/cleanup.d/etc <<-EOF
-	delete=.pwd.lock
-	delete=group-
-	delete=gshadow-
-	delete=passwd-
-	delete=shadow-
-	delete=subgid-
-	delete=subuid-
+/x/glob / - /x/conf/cleanup/python-cache <<-EOF
+	delete=**/*.pyc
+	delete=**/*.pyo
+	delete=**/__pycache__
 EOF
