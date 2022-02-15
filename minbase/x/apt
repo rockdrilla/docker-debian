@@ -120,9 +120,8 @@ xapt_dpkg_avail_hack() {
 
 xapt_list_installed() {
 	dpkg-query -W \
-		-f='${binary:Package}:${Architecture}|${db:Status-Abbrev}\n' \
-	| mawk -F '|' '{ if ($2 ~ "^[hi]i ") print $1;}' \
-	| cut -d : -f 1-2 \
+		-f='${Package}:${Architecture}|${db:Status-Abbrev}\n' \
+	| sed -En '/^(.+)\|[hi]i $/{s//\1/;p}' \
 	| sort -V
 }
 
@@ -130,55 +129,77 @@ xapt_list_martians() {
 	t=$(mktemp) ; : "${t:?}"
 
 	dpkg-query -W \
-	    -f='${binary:Package} ${Version}|${db:Status-Abbrev}\n' \
-	| mawk -F '|' '{ if ($2 != "ii ") print $1 ", state=\"" $2 "\"" ; }' \
+	    -f='${Package}:${Architecture} ${Version} status="${db:Status-Abbrev}"\n' \
+	| grep -Ev '"ii "$' \
 	| sort -V \
 	> "$t"
 
 	if [ -s "$t" ] ; then
-		echo '# "martian" packages (unusual state):' 1>&2
+		if [ -t 1 ] ; then
+			echo '# "martian" packages (unusual state):' 1>&2
+		fi
 		cat "$t"
 	fi
 
 	rm -f "$t"
 }
 
-xapt_list_auto() {
-	w=$(mktemp -d) ; : "${w:?}"
-
+xapt_list_auto__int() {
 	mawk '
 	/^Package:/,/^$/ {
 	    if ($1 == "Package:")        { pkg = $2; }
 	    if ($1 == "Architecture:")   { arch = $2; }
 	    if ($1 == "Auto-Installed:") { is_auto = $2; }
 	    if ($0 == "") {
-	        if (is_auto == 1) { print pkg":"arch; }
+	        if (is_auto == 1) { print pkg ":" arch; }
 	    }
 	}
 	' /var/lib/apt/extended_states \
 	| sort -V \
-	> "$w/auto"
+	> "$w/auto.pkg"
 
-	## fix:
-	## /var/lib/apt/extended_states stores (some) arch:all entries as arch:native
-	xapt_list_installed \
-	| grep -F ':all' \
-	| cut -d : -f 1 \
-	| xargs -r printf '/^(%s):.+$/{s//\\1:all/}\n' \
-	> "$w/auto.sed"
-	sed -E -f "$w/auto.sed" "$w/auto"
+	while : ; do
+		[ -s "$w/auto.pkg" ] || break
+
+		## fix:
+		## /var/lib/apt/extended_states stores (some) arch:all entries as arch:native
+		sed -En '/^([^:]+):all$/ {s##/^\1:.+$/ {s//\1:all/}#p}' \
+		< "$w/all" \
+		> "$w/auto.sed"
+		
+		if [ -s "$w/auto.sed" ] ; then
+			sed -E -f "$w/auto.sed"
+		else
+			cat
+		fi < "$w/auto.pkg"
+
+		break
+	done
+}
+
+xapt_list_auto() {
+	w=$(mktemp -d) ; : "${w:?}"
+
+	xapt_list_installed > "$w/all"
+	xapt_list_auto__int
 
 	rm -rf "$w"
+}
+
+xapt_list_manual__int() {
+	xapt_list_auto__int > "$w/auto"
+	if [ -s "$w/auto" ] ; then
+		grep -Fxv -f "$w/auto"
+	else
+		cat
+	fi < "$w/all"
 }
 
 xapt_list_manual() {
 	w=$(mktemp -d) ; : "${w:?}"
 
 	xapt_list_installed > "$w/all"
-	"$0" list-auto > "$w/auto"
-
-	grep -Fxv -f "$w/auto" \
-	"$w/all"
+	xapt_list_manual__int
 
 	rm -rf "$w"
 }
