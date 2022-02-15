@@ -90,7 +90,7 @@ divert /usr/bin/deb-systemd-helper
 divert /usr/bin/deb-systemd-invoke
 
 ## forced apt/dpkg cleanup
-/x/lib/cleanup/apt-dpkg-related
+/x/apt cleanup
 ## update package lists and install auxiliary packages
 Q=1 /x/apt install ${pkg_aux}
 ## mark them as manual

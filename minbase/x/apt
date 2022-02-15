@@ -56,7 +56,7 @@ autoclean|build-dep|build-depends|forbid-version|forget-new|hold|keep-all|markau
 install-aptitude)
 	flavour=aptitude
 ;;
-install-*|list-*)
+cleanup|install-*|list-*)
 	flavour=apt
 ;;
 esac
@@ -225,6 +225,9 @@ if [ "${flavour}" = aptitude ] ; then
 fi
 
 case "${act}" in
+cleanup)
+	/x/lib/cleanup/apt-dpkg-related
+;;
 list-installed)
 	xapt_list_installed
 ;;

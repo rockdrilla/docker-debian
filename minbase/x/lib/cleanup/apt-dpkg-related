@@ -28,3 +28,14 @@ EOF
 	delete=**
 	keep=archives/lock
 EOF
+
+/x/glob /var/log <<-EOF
+	delete=alternatives.log
+	delete=alternatives.log.*
+	delete=apt/*.log
+	delete=apt/*.log.*
+	delete=aptitude
+	delete=aptitude.*
+	delete=dpkg.log
+	delete=dpkg.log.*
+EOF
