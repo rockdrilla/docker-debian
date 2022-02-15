@@ -74,7 +74,7 @@ _q() { /x/quiet "$@" ; }
 _cq=
 case "$Q" in
 0) ;;
-1) _cq=q ;;
+1) _cq=_q ;;
 esac
 
 find_fresh_ts() {
