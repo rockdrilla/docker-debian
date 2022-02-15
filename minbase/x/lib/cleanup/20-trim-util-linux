@@ -11,7 +11,7 @@ set -ef
 allowed_bin='choom chrt fallocate findmnt flock getopt ionice ipcmk ipcrm ipcs lsipc lslocks lsmem lsns more mountpoint namei nsenter pg prlimit rev setpriv setsid setterm taskset unshare whereis'
 allowed_sbin='runuser'
 dpkg_list='/var/lib/dpkg/info/util-linux.list'
-conf='/x/conf/dpkg.cfg.d/util-linux.auto'
+conf='/x/conf/dpkg-path-filter/util-linux.auto'
 
 if ! [ -s "${dpkg_list}" ] ; then
 	exit 0
