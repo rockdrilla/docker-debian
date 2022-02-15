@@ -1,0 +1,31 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2022, Konstantin Demin
+
+set_output() {
+	if echo "$1" | grep -Eq '/$' ; then
+		mktemp -p "$1"
+	else
+		echo "$1"
+	fi
+}
+
+if [ -n "$2" ] ; then
+	out=$(set_output "$2")
+	: "${out:?}"
+	exec 1> "${out}"
+fi
+
+t=$(mktemp) ; : "${t:?}"
+
+ldd "$1" 2>/dev/null \
+| grep -F ' => ' > "$t"
+
+if [ -s "$t" ] ; then
+	sed -En "
+	/^.+ => (.+) \\(\\S+\\)\$/    {s##1|$1|\\1#p}
+	/^\\s*(\\S.+) => not found\$/ {s##0|$1|\\1#p}
+	" < "$t"
+fi
+
+rm -f "$t"

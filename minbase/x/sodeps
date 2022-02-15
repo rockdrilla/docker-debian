@@ -1,0 +1,120 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2022, Konstantin Demin
+
+if [ $# = 0 ] ; then
+	return
+fi
+
+: "${SODEPS_MISSING:=error}"
+
+w=$(mktemp -d) ; : "${w:?}"
+
+if ! command -v file >/dev/null ; then
+	/x/apt list-installed > "$w/installed.0"
+	/x/quiet /x/apt install file
+fi
+
+if [ -z "${NPROC}" ] ; then
+	NPROC=$(nproc)
+	NPROC=$(( NPROC + (NPROC + 1)/2 ))
+fi
+
+for i ; do
+	[ -n "$i" ] || continue
+
+	if [ -f "$i" ] ; then
+		printf '%s\0' "$i"
+	elif [ -d "$i" ] ; then
+		find "$i/" -follow -type f -print0
+	else
+		env printf 'skipping because unable to handle: %q\n' "$i" 1>&2
+	fi
+done \
+| xargs -0 -r -n 128 stat -L --printf='%d:%i|%n\0' \
+| sort -z -u -t '|' -k1,1 \
+| cut -z -d '|' -f 2 \
+> "$w/filelist"
+
+mkdir "$w/results"
+
+xargs -0 -r -a "$w/filelist" -n 64 file -L -N -F '|' -p -S -e compress -P bytes=512 -P elf_notes=0 \
+< /dev/null \
+| mawk -F '|' 'BEGIN { ORS="\0"; } $2 ~ "^ ?ELF " { print $1; }' \
+| xargs -0 -r -P "${NPROC}" -I % /x/aux/elf-sodeps % "$w/results/"
+
+## merge results
+find "$w/results/" -type f -exec sort -uV '{}' + > "$w/all"
+rm -rf "$w/results/"
+
+mawk -F '|' -f - "$w/all" <<-EOF
+	 NF != 3 { print \$0         >> "$w/nonfit"; }
+	\$1 == 0 { print \$2 "|" \$3 >> "$w/notfound"; }
+	\$1 == 1 { print \$3         >> "$w/resolved"; }
+EOF
+
+## verify results
+if [ -s "$w/nonfit" ] ; then
+	exec 1>&2
+	echo '# non-fit results:'
+	sed -E 's/^/#   /' < "$w/nonfit"
+	rm -rf "$w"
+	exit 1
+fi
+
+case "${SODEPS_MISSING}" in
+ignore)
+	## don't use in production :D
+;;
+## warn|error)
+*)
+	while : ; do
+		[ -s "$w/notfound" ] || break
+
+		find /x/conf/sodeps/ignore.d/ -follow -type f -exec cat {} + \
+		| sort -uV > "$w/rules.ignore"
+		[ -s "$w/rules.ignore" ] || break
+
+		grep -E -f "$w/rules.ignore" < "$w/notfound" > "$w/ignored"
+		rm "$w/rules.ignore"
+		[ -s "$w/ignored" ] || break
+
+		grep -Fxv -f "$w/ignored" < "$w/notfound" > "$w/notfound.t"
+		mv -f "$w/notfound.t" "$w/notfound"
+		break
+	done
+
+	if [ -s "$w/ignored" ] ; then
+		echo '# not found but ignored via /x/conf/sodeps/ignore.d/:'
+		sed -E 's/^/#   /' < "$w/ignored"
+	fi 1>&2
+
+	if [ -s "$w/notfound" ] ; then
+		echo '# not found:'
+		sed -E 's/^/#   /' < "$w/notfound"
+
+		## if [ "${SODEPS_MISSING}" = error ] ; then
+		if [ "${SODEPS_MISSING}" != warn ] ; then
+			rm -rf "$w"
+			exit 1
+		fi
+	fi 1>&2
+;;
+esac
+
+if [ -s "$w/resolved" ] ; then
+	if [ -t 1 ] ; then
+		echo '# resolved:' 1>&2
+	fi
+
+	sort -uV < "$w/resolved"
+fi
+
+## cleanup
+if [ -s "$w/installed.0" ] ; then
+	/x/apt list-installed > "$w/installed.1"
+	grep -Fxv -f "$w/installed.0" "$w/installed.1" > "$w/pkg.remove"
+	xargs -r /x/quiet /x/apt purge < "$w/pkg.remove"
+fi
+
+rm -rf "$w"
