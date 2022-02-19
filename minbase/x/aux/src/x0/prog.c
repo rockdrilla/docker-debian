@@ -40,18 +40,19 @@ void usage(void)
 	fprintf(stderr,
 		"Usage: x0 <program> <script>\n"
 		"  <script> - file with NUL-separated arguments\n"
-		"Attention: <script> will be deleted in almost any any case!\n"
+		"Attention: <script> will be deleted in almost any case!\n"
 	);
 }
 
 int main(int argc, char * argv[])
 {
-	struct stat f_stat;
-	char * e_str = NULL;
 	int    n_ret = 0;
 	int     f_fd = -1;
+	char * e_str = NULL;
+	struct stat f_stat;
 
 	if (argc == 1) {
+		usage();
 		return 0;
 	}
 

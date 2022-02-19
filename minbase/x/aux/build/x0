@@ -6,6 +6,7 @@ set -ef
 
 bin='x0'
 dst_dir='/x/bin'
+src_dir="/x/aux/src/${bin}"
 test_bin() { "$1/${bin}" 2>/dev/null ; }
 
 if test_bin "${dst_dir}" ; then
@@ -25,7 +26,7 @@ eval "$(dpkg-buildflags --export=sh)"
 
 (
 	set -x
-	gcc -o "${bin}" /x/aux/src/x0/prog.c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS}
+	gcc -o "${bin}" "${src_dir}/prog.c" ${CFLAGS} ${CPPFLAGS} ${LDFLAGS}
 )
 chmod 0755 "${bin}"
 test_bin .
