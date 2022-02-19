@@ -1,0 +1,37 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2022, Konstantin Demin
+
+set -ef
+
+bin='is-elf'
+dst_dir='/x/bin'
+src_dir="/x/aux/src/${bin}"
+test_bin() { "$1/${bin}" 2>/dev/null ; }
+
+if test_bin "${dst_dir}" ; then
+	exit
+fi
+
+## temp directory
+w=$(mktemp -d) ; : "${w:?}" ; cd "$w"
+
+export DEB_BUILD_OPTIONS='hardening=+all'
+export DEB_CFLAGS_STRIP='-g'
+export DEB_CFLAGS_APPEND='-g0'
+export DEB_CPPFLAGS_APPEND='-Werror -Wall -Wextra -Wno-unused-parameter'
+export DEB_LDFLAGS_APPEND='-s'
+
+eval "$(dpkg-buildflags --export=sh)"
+
+(
+	set -x
+	gcc -o "${bin}" "${src_dir}/prog.c" ${CFLAGS} ${CPPFLAGS} ${LDFLAGS}
+)
+chmod 0755 "${bin}"
+test_bin .
+cp -f "${bin}" "${dst_dir}/"
+stat -c '%A %s %n' "${dst_dir}/${bin}"
+
+cd /
+rm -rf "$w"

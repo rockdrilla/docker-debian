@@ -117,8 +117,9 @@ w=$(Q=1 /x/build-wrap --begin curl dpkg-dev gcc libc6-dev)
 ## build su-exec
 /x/aux/build/su-exec
 
-## build own supplemental utility
+## build own supplemental utilities
 /x/aux/build/x0
+/x/aux/build/is-elf
 
 Q=1 /x/build-wrap --end "$w"
 

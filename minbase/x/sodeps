@@ -10,11 +10,6 @@ fi
 
 w=$(mktemp -d) ; : "${w:?}"
 
-if ! command -v file >/dev/null ; then
-	/x/apt list-installed > "$w/installed.0"
-	/x/quiet /x/apt install file
-fi
-
 if [ -z "${NPROC}" ] ; then
 	NPROC=$(nproc)
 	NPROC=$(( NPROC + (NPROC + 1)/2 ))
@@ -38,9 +33,7 @@ done \
 
 mkdir "$w/results"
 
-xargs -0 -r -a "$w/filelist" -n 64 file -L -N -F '|' -p -S -e compress -P bytes=512 -P elf_notes=0 \
-< /dev/null \
-| mawk -F '|' 'BEGIN { ORS="\0"; } $2 ~ "^ ?ELF " { print $1; }' \
+xargs -0 -r -n 1 /x/bin/is-elf < "$w/filelist" \
 | xargs -0 -r -P "${NPROC}" -I % /x/aux/elf-sodeps % "$w/results/"
 
 ## merge results
@@ -108,13 +101,6 @@ if [ -s "$w/resolved" ] ; then
 	fi
 
 	sort -uV < "$w/resolved"
-fi
-
-## cleanup
-if [ -s "$w/installed.0" ] ; then
-	/x/apt list-installed > "$w/installed.1"
-	grep -Fxv -f "$w/installed.0" "$w/installed.1" > "$w/pkg.remove"
-	xargs -r /x/quiet /x/apt purge < "$w/pkg.remove"
 fi
 
 rm -rf "$w"
