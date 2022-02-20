@@ -1,17 +1,17 @@
-/* x0: simple (or sophisticated?) launcher
+/* execvp: simple (or sophisticated?) launcher
  *
  * SPDX-License-Identifier: BSD-3-Clause
  * (c) 2022, Konstantin Demin
  *
  * Example usage in shell scripts:
- *   x0 program /tmp/list
+ *   /x/bin/execvp program /tmp/list
  * is roughly equal to:
  *   ( sleep 5 ; rm -f /tmp/list ; ) &
  *   xargs -0 -r -a /tmp/list program
  * where /tmp/list is file with NUL-separated arguments
  * except:
- * - x0 is NOT replacement for xargs
- * - x0's return code is exact program return code
+ * - execvp is NOT replacement for xargs
+ * - execvp's return code is exact program return code
  *   or appropriate error code
  * - there's no need to sleep()
  */
@@ -38,7 +38,7 @@ char e_buf[4096];
 void usage(void)
 {
 	fprintf(stderr,
-		"Usage: x0 <program> <script>\n"
+		"Usage: execvp <program> <script>\n"
 		"  <script> - file with NUL-separated arguments\n"
 		"Attention: <script> will be deleted in almost any case!\n"
 	);

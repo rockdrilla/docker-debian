@@ -430,5 +430,5 @@ rm -rf "$w"
 #( sleep 5 ; rm -f "${cmd}" ; ) &
 # exec xargs -0 -a "${cmd}" setpriv
 
-## x0 is responsible for ${cmd} deletion
-exec /opt/aux/x0 setpriv "${cmd}"
+## execvp is responsible for ${cmd} deletion
+exec /x/bin/execvp setpriv "${cmd}"

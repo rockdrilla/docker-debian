@@ -4,7 +4,7 @@
 
 set -ef
 
-bin='x0'
+bin='execvp'
 dst_dir='/x/bin'
 src_dir="/x/aux/src/${bin}"
 test_bin() { "$1/${bin}" 2>/dev/null ; }
