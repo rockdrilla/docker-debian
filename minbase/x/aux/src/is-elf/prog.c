@@ -89,10 +89,9 @@ int main(int argc, char * argv[])
 
 	close(f_fd); f_fd = -1;
 
-	if (n_buf[0] != ELFMAG0) goto cleanup;
-	if (n_buf[1] != ELFMAG1) goto cleanup;
-	if (n_buf[2] != ELFMAG2) goto cleanup;
-	if (n_buf[3] != ELFMAG3) goto cleanup;
+	const uint32_t elf_sig = (ELFMAG0 << 24) | (ELFMAG1 << 16) | (ELFMAG2 << 8) | (ELFMAG3);
+	uint32_t * f_sig = (uint32_t *) n_buf;
+	if (u32toh(*f_sig) != elf_sig) goto cleanup;
 
 	switch (n_buf[EI_CLASS]) {
 	case ELFCLASS32:
