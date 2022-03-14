@@ -6,7 +6,7 @@
  * Example usage in shell scripts:
  *   /x/bin/execvp program /tmp/list
  * is roughly equal to:
- *   ( sleep 5 ; rm -f /tmp/list ; ) &
+ *   ( sleep 5 ; [ -w /tmp/list ] && rm -f /tmp/list ; ) &
  *   xargs -0 -r -a /tmp/list program
  * where /tmp/list is file with NUL-separated arguments
  * except:
@@ -25,8 +25,8 @@
 
 #include <sys/stat.h>
 
-#define CMD_LEN_MAX 1048576
-#define CMD_ARGS_MAX 2047
+#define CMD_LEN_MAX 2097152
+#define CMD_ARGS_MAX 4095
 
 int n_argc = 0;
 char * n_argv[CMD_ARGS_MAX + 1];
@@ -46,10 +46,11 @@ void usage(void)
 
 int main(int argc, char * argv[])
 {
-	int    n_ret = 0;
-	int     f_fd = -1;
-	char * e_str = NULL;
-	struct stat f_stat;
+	int            n_ret = 0;
+	int             f_fd = -1;
+	char *         e_str = NULL;
+	int    b_del_cmdline = 0;
+	struct stat   f_stat;
 
 	if (argc == 1) {
 		usage();
@@ -62,6 +63,7 @@ int main(int argc, char * argv[])
 	}
 
 	memset(&e_buf, 0, sizeof(e_buf));
+	memset(&f_stat, 0, sizeof(f_stat));
 
 	f_fd = open(argv[2], O_RDONLY | O_NOFOLLOW);
 	if (f_fd < 0) {
@@ -71,7 +73,6 @@ int main(int argc, char * argv[])
 		goto cleanup;
 	}
 
-	memset(&f_stat, 0, sizeof(f_stat));
 	if (fstat(f_fd, &f_stat) < 0) {
 		n_ret = errno;
 		e_str = strerror_r(n_ret, e_buf, sizeof(e_buf));
@@ -79,11 +80,17 @@ int main(int argc, char * argv[])
 		goto cleanup;
 	}
 
-	if ((f_stat.st_size < 0) || (f_stat.st_size > CMD_LEN_MAX)) {
-		n_ret = ENOENT;
+	for (;;) {
+		if (f_stat.st_size < 0) n_ret = ENOENT;
+		else
+		if (f_stat.st_size > CMD_LEN_MAX) n_ret = E2BIG;
+		else break;
+
 		fprintf(stderr, "%s stat.st_size=%ld\n", argv[2], f_stat.st_size);
 		goto cleanup;
 	}
+
+	b_del_cmdline = (f_stat.st_mode & S_IWUSR) == S_IWUSR;
 
 	memset(n_argv, 0, sizeof(n_argv));
 	n_argv[0] = argv[1];
@@ -115,8 +122,8 @@ int main(int argc, char * argv[])
 		}
 	}
 
-	close(f_fd);
-	unlink(argv[2]);
+	close(f_fd); f_fd = -1;
+	if (b_del_cmdline) unlink(argv[2]);
 
 	execvp(argv[1], n_argv);
 	// execution follows here in case of errors
@@ -127,11 +134,9 @@ int main(int argc, char * argv[])
 	return n_ret;
 
 cleanup:
-	if (f_fd >= 0) {
-		close(f_fd);
-	}
+	if (f_fd >= 0) close(f_fd);
 
-	unlink(argv[2]);
+	if (b_del_cmdline) unlink(argv[2]);
 
 	return n_ret;
 }
