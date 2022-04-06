@@ -8,16 +8,9 @@ test_bin() { "$1/${bin}" -V 2>/dev/null ; }
 
 . "$(dirname "$0")/_pre.sh"
 
-DUMB_INIT_VERSION='v1.2.5'
-DUMB_INIT_URI="https://github.com/Yelp/dumb-init/raw/${DUMB_INIT_VERSION}"
-DUMB_INIT_FILES='dumb-init.c VERSION.h'
-for i in ${DUMB_INIT_FILES} ; do
-	curl -sSL -o "$i" "${DUMB_INIT_URI}/$i"
-done
-
 (
 	set -x
-	gcc -o "${bin}" dumb-init.c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS}
+	gcc -o "${bin}" "${src_dir}/dumb-init.c" ${CFLAGS} ${CPPFLAGS} ${LDFLAGS}
 )
 
 . "$(dirname "$0")/_post.sh"
