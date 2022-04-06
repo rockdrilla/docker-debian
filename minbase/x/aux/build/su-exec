@@ -8,16 +8,9 @@ test_bin() { "$1/${bin}" >/dev/null 2>/dev/null ; }
 
 . "$(dirname "$0")/_pre.sh"
 
-SU_EXEC_VERSION='212b75144bbc06722fbd7661f651390dc47a43d1'
-SU_EXEC_URI="https://github.com/ncopa/su-exec/raw/${SU_EXEC_VERSION}"
-SU_EXEC_FILES='su-exec.c'
-for i in ${SU_EXEC_FILES} ; do
-	curl -sSL -o "$i" "${SU_EXEC_URI}/$i"
-done
-
 (
 	set -x
-	gcc -o "${bin}" su-exec.c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS}
+	gcc -o "${bin}" "${src_dir}/su-exec.c" ${CFLAGS} ${CPPFLAGS} ${LDFLAGS}
 )
 
 . "$(dirname "$0")/_post.sh"
