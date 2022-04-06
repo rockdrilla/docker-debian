@@ -4,24 +4,9 @@
 
 set -ef
 
-bin='su-exec'
-dst_dir='/x/bin'
 test_bin() { "$1/${bin}" >/dev/null 2>/dev/null ; }
 
-if test_bin "${dst_dir}" ; then
-	exit
-fi
-
-## temp directory
-w=$(mktemp -d) ; : "${w:?}" ; cd "$w"
-
-export DEB_BUILD_OPTIONS='hardening=+all'
-export DEB_CFLAGS_STRIP='-g'
-export DEB_CFLAGS_APPEND='-g0'
-export DEB_CPPFLAGS_APPEND='-Werror -Wall -Wextra -Wno-unused-parameter'
-export DEB_LDFLAGS_APPEND='-s'
-
-eval "$(dpkg-buildflags --export=sh)"
+. "$(dirname "$0")/_pre.sh"
 
 SU_EXEC_VERSION='212b75144bbc06722fbd7661f651390dc47a43d1'
 SU_EXEC_URI="https://github.com/ncopa/su-exec/raw/${SU_EXEC_VERSION}"
@@ -34,10 +19,5 @@ done
 	set -x
 	gcc -o "${bin}" su-exec.c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS}
 )
-chmod 0755 "${bin}"
-test_bin .
-cp -f "${bin}" "${dst_dir}/"
-stat -c '%A %s %n' "${dst_dir}/${bin}"
 
-cd /
-rm -rf "$w"
+. "$(dirname "$0")/_post.sh"
