@@ -20,11 +20,12 @@
 #include <elf.h>
 #include <endian.h>
 
-char n_buf[sizeof(Elf32_Ehdr)];
+static char   e_buf[8192];
+static char * e_str = NULL;
 
-char e_buf[4096];
+static char n_buf[sizeof(Elf32_Ehdr)];
 
-void usage(void)
+static void usage(void)
 {
 	fprintf(stderr,
 		"Usage: is-elf <file>\n"
@@ -32,23 +33,19 @@ void usage(void)
 	);
 }
 
-int bo_target = ELFDATANONE;
-uint16_t u16toh(uint16_t value)
+static int bo_target = ELFDATANONE;
+static uint16_t u16toh(uint16_t value)
 {
 	return (bo_target == ELFDATA2LSB) ? le16toh(value) : be16toh(value);
 }
-uint32_t u32toh(uint32_t value)
+static uint32_t u32toh(uint32_t value)
 {
 	return (bo_target == ELFDATA2LSB) ? le32toh(value) : be32toh(value);
 }
 
 int main(int argc, char * argv[])
 {
-	int          f_fd = -1;
-	int         n_ret = 1; // EINVAL ?..
-	char      * e_str = NULL;
-	Elf32_Ehdr * ehdr = (void *) n_buf;
-	struct stat f_stat;
+	int n_ret = EINVAL;
 
 	if (argc == 1) {
 		usage();
@@ -57,41 +54,51 @@ int main(int argc, char * argv[])
 
 	if (argc != 2) {
 		usage();
-		return EINVAL;
+		return EAGAIN;
 	}
 
 	memset(&e_buf, 0, sizeof(e_buf));
 
-	f_fd = open(argv[1], O_RDONLY);
+	int f_fd = open(argv[1], O_RDONLY);
 	if (f_fd < 0) {
 		n_ret = errno;
 		e_str = strerror_r(n_ret, e_buf, sizeof(e_buf));
-		fprintf(stderr, "open(2) error %d: %s\n", n_ret, e_str);
+		fprintf(stderr, "open(2) error %d \"%s\", file %s\n", n_ret, e_str, argv[1]);
 		goto cleanup;
 	}
 
+	struct stat f_stat;
 	memset(&f_stat, 0, sizeof(f_stat));
 	if (fstat(f_fd, &f_stat) < 0) {
 		n_ret = errno;
 		e_str = strerror_r(n_ret, e_buf, sizeof(e_buf));
-		fprintf(stderr, "fstat(2) error %d: %s\n", n_ret, e_str);
+		fprintf(stderr, "fstat(2) error %d \"%s\", file %s\n", n_ret, e_str, argv[1]);
 		goto cleanup;
 	}
 
-	if (f_stat.st_size < (off_t) sizeof(n_buf)) goto cleanup;
+	if (!S_ISREG(f_stat.st_mode)) {
+		fprintf(stderr, "argument error: not a regular file: %s\n", argv[1]);
+		goto cleanup;
+	}
+
+	if (f_stat.st_size < (off_t) sizeof(n_buf)) {
+		fprintf(stderr, "argument error: file is too short: %s\n", argv[1]);
+		goto cleanup;
+	}
 
 	if (sizeof(n_buf) != read(f_fd, n_buf, sizeof(n_buf))) {
 		n_ret = errno;
 		e_str = strerror_r(n_ret, e_buf, sizeof(e_buf));
-		fprintf(stderr, "read(2) error %d: %s\n", n_ret, e_str);
+		fprintf(stderr, "read(2) error %d \"%s\", file %s\n", n_ret, e_str, argv[1]);
 		goto cleanup;
 	}
 
 	close(f_fd); f_fd = -1;
 
 	const uint32_t elf_sig = (ELFMAG0 << 24) | (ELFMAG1 << 16) | (ELFMAG2 << 8) | (ELFMAG3);
-	uint32_t * f_sig = (uint32_t *) n_buf;
-	if (u32toh(*f_sig) != elf_sig) goto cleanup;
+	if (elf_sig != u32toh(*((uint32_t *) n_buf))) {
+		goto cleanup;
+	}
 
 	switch (n_buf[EI_CLASS]) {
 	case ELFCLASS32:
@@ -102,8 +109,7 @@ int main(int argc, char * argv[])
 		goto cleanup;
 	}
 
-	bo_target = n_buf[EI_DATA];
-	switch (bo_target) {
+	switch (bo_target = n_buf[EI_DATA]) {
 	case ELFDATA2LSB:
 		// -fallthrough
 	case ELFDATA2MSB:
@@ -127,6 +133,8 @@ int main(int argc, char * argv[])
 	default:
 		goto cleanup;
 	}
+
+	Elf32_Ehdr * ehdr = (Elf32_Ehdr *) n_buf;
 
 	switch (u16toh(ehdr->e_type)) {
 	case ET_REL:
