@@ -25,32 +25,29 @@
 
 #include <sys/stat.h>
 
-#define CMD_LEN_MAX 2097152
+#define CMD_LEN_MAX 2097151
 #define CMD_ARGS_MAX 4095
 
-int n_argc = 0;
-char * n_argv[CMD_ARGS_MAX + 1];
+static char   n_buf[CMD_LEN_MAX + 1];
+static int    n_argc = 0;
+static char * n_argv[CMD_ARGS_MAX + 1];
 
-char n_buf[CMD_LEN_MAX];
+static char   e_buf[8192];
+static char * e_str = NULL;
 
-char e_buf[4096];
-
-void usage(void)
+static void usage(void)
 {
 	fprintf(stderr,
 		"Usage: execvp <program> <script>\n"
 		"  <script> - file with NUL-separated arguments\n"
-		"Attention: <script> will be deleted in almost any case!\n"
+		"Attention: <script> file will be DELETED if it has 'u+w' permission\n"
 	);
 }
 
 int main(int argc, char * argv[])
 {
-	int            n_ret = 0;
-	int             f_fd = -1;
-	char *         e_str = NULL;
-	int    b_del_cmdline = 0;
-	struct stat   f_stat;
+	int n_ret = 0;
+	int b_del = 0;
 
 	if (argc == 1) {
 		usage();
@@ -59,38 +56,34 @@ int main(int argc, char * argv[])
 
 	if (argc != 3) {
 		usage();
-		return EINVAL;
+		return EAGAIN;
 	}
 
 	memset(&e_buf, 0, sizeof(e_buf));
-	memset(&f_stat, 0, sizeof(f_stat));
 
-	f_fd = open(argv[2], O_RDONLY | O_NOFOLLOW);
+	int f_fd = open(argv[2], O_RDONLY | O_NOFOLLOW);
 	if (f_fd < 0) {
 		n_ret = errno;
 		e_str = strerror_r(n_ret, e_buf, sizeof(e_buf));
-		fprintf(stderr, "open(2) error %d: %s\n", n_ret, e_str);
+		fprintf(stderr, "open(2) error %d \"%s\", file %s\n", n_ret, e_str, argv[2]);
 		goto cleanup;
 	}
 
+	struct stat f_stat;
+	memset(&f_stat, 0, sizeof(f_stat));
 	if (fstat(f_fd, &f_stat) < 0) {
 		n_ret = errno;
 		e_str = strerror_r(n_ret, e_buf, sizeof(e_buf));
-		fprintf(stderr, "fstat(2) error %d: %s\n", n_ret, e_str);
+		fprintf(stderr, "fstat(2) error %d \"%s\", file %s\n", n_ret, e_str, argv[2]);
 		goto cleanup;
 	}
 
-	for (;;) {
-		if (f_stat.st_size < 0) n_ret = ENOENT;
-		else
-		if (f_stat.st_size > CMD_LEN_MAX) n_ret = E2BIG;
-		else break;
+	b_del = (f_stat.st_mode & S_IWUSR) != 0;
 
-		fprintf(stderr, "%s stat.st_size=%ld\n", argv[2], f_stat.st_size);
+	if (f_stat.st_size > CMD_LEN_MAX) {
+		fprintf(stderr, "argument error: file is too big (stat.st_size=%ld): %s\n", f_stat.st_size, argv[2]);
 		goto cleanup;
 	}
-
-	b_del_cmdline = (f_stat.st_mode & S_IWUSR) == S_IWUSR;
 
 	memset(n_argv, 0, sizeof(n_argv));
 	n_argv[0] = argv[1];
@@ -113,8 +106,8 @@ int main(int argc, char * argv[])
 
 			n_argc++;
 			if (n_argc == CMD_ARGS_MAX) {
-				fprintf(stderr, "arg count reached limit: %d\n", n_argc);
 				n_ret = E2BIG;
+				fprintf(stderr, "arg count reached limit (%d)\n", CMD_ARGS_MAX);
 				goto cleanup;
 			}
 			n_argv[n_argc] = t;
@@ -123,20 +116,27 @@ int main(int argc, char * argv[])
 	}
 
 	close(f_fd); f_fd = -1;
-	if (b_del_cmdline) unlink(argv[2]);
 
-	execvp(argv[1], n_argv);
+	if (b_del) {
+		unlink(argv[2]);
+		b_del = 0;
+	}
+
+	execvp(n_argv[0], n_argv);
 	// execution follows here in case of errors
 	n_ret = errno;
 	e_str = strerror_r(n_ret, e_buf, sizeof(e_buf));
 	fprintf(stderr, "execvp(3) error %d: %s\n", n_ret, e_str);
-	fprintf(stderr, "argv[1]=%s\n", argv[1]);
 	return n_ret;
 
 cleanup:
-	if (f_fd >= 0) close(f_fd);
+	if (f_fd >= 0) {
+		close(f_fd);
+	}
 
-	if (b_del_cmdline) unlink(argv[2]);
+	if (b_del) {
+		unlink(argv[2]);
+	}
 
 	return n_ret;
 }
