@@ -16,8 +16,7 @@ w=$(mktemp -d) ; : "${w:?}" ; cd "$w"
 export DEB_BUILD_OPTIONS='hardening=+all'
 export DEB_CFLAGS_STRIP='-g'
 export DEB_CFLAGS_PREPEND='-g0'
-export DEB_CPPFLAGS_PREPEND='-Werror -Wall -Wextra -Wno-unused-parameter'
-export DEB_CPPFLAGS_APPEND="-I${src_dir}"
+export DEB_CPPFLAGS_PREPEND="-I${src_dir} -Werror -Wall -Wextra -Wno-unused-parameter"
 export DEB_LDFLAGS_PREPEND='-s'
 
 eval "$(dpkg-buildflags --export=sh)"
