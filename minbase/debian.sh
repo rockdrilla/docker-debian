@@ -98,6 +98,7 @@ mmdebstrap \
   --dpkgopt="${dir0}/setup/dpkg.cfg" \
   --customize-hook='chroot "$1" mkdir /x' \
   --customize-hook="sync-in '${dir0}/x' /x" \
+  --customize-hook='find "$1/x/bin" -mindepth 1 -delete' \
   --customize-hook="sync-in '${dir0}/crt' /usr/local/share/ca-certificates" \
   --customize-hook="sync-in '${dir0}/opt' /opt" \
   --customize-hook="'${dir0}/setup/mmdebstrap.sh' \"\$1\" ${distro} ${suite} ${uid} ${gid}" \
