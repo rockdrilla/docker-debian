@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -82,7 +83,9 @@ int main(int argc, char * argv[])
 	}
 
 	if (f_stat.st_size < (off_t) sizeof(n_buf)) {
-		fprintf(stderr, "argument error: file is too short: %s\n", argv[1]);
+		if (getenv("IS_ELF_VERBOSE")) {
+			fprintf(stderr, "argument error: file is too short: %s\n", argv[1]);
+		}
 		goto cleanup;
 	}
 
