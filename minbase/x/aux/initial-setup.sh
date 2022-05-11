@@ -109,7 +109,7 @@ find /usr/share/vim/ -name debian.vim \
 
 ## build supplemental utilities
 
-w=$(Q=1 /x/build-wrap --begin curl dpkg-dev gcc libc6-dev)
+w=$(Q=1 /x/build-wrap --begin dpkg-dev gcc libc6-dev)
 
 ## build dumb-init
 /x/aux/build/dumb-init
