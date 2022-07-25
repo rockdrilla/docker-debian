@@ -15,21 +15,7 @@ if [ -z "${NPROC}" ] ; then
 	NPROC=$(( NPROC + (NPROC + 1)/2 ))
 fi
 
-for i ; do
-	[ -n "$i" ] || continue
-
-	if [ -f "$i" ] ; then
-		printf '%s\0' "$i"
-	elif [ -d "$i" ] ; then
-		find "$i/" -follow -type f -print0
-	else
-		env printf 'skipping because unable to handle: %q\n' "$i" 1>&2
-	fi
-done \
-| xargs -0 -r -n 128 stat -L --printf='%d:%i|%n\0' \
-| sort -z -u -t '|' -k1,1 \
-| cut -z -d '|' -f 2 \
-> "$w/filelist"
+/x/bin/ufind -z "$@" > "$w/filelist"
 
 mkdir "$w/results"
 

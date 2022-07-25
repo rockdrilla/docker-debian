@@ -1,3 +1,6 @@
 [submodule "distro-info"]
 	path = distro-info
 	url = https://github.com/rockdrilla/distro-info-wrapper.git
+[submodule "minbase/x/aux/src/ufind"]
+	path = minbase/x/aux/src/ufind
+	url = https://github.com/rockdrilla/ufind.git

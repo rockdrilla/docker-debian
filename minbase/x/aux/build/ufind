@@ -1,0 +1,16 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+# (c) 2022, Konstantin Demin
+
+set -ef
+
+test_bin() { "$1/${bin}" 2>/dev/null ; }
+
+. "$(dirname "$0")/_pre.sh"
+
+(
+	set -x
+	gcc -o "${bin}" "${src_dir}/prog.c" ${CFLAGS} ${CPPFLAGS} ${LDFLAGS}
+)
+
+. "$(dirname "$0")/_post.sh"

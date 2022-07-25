@@ -120,6 +120,7 @@ w=$(Q=1 /x/build-wrap --begin dpkg-dev gcc libc6-dev)
 ## build own supplemental utilities
 /x/aux/build/execvp
 /x/aux/build/is-elf
+/x/aux/build/ufind
 
 Q=1 /x/build-wrap --end "$w"
 
