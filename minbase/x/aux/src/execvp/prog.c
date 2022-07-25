@@ -20,29 +20,25 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include <sys/stat.h>
 
-#define CMD_LEN_MAX 2097151
-#define CMD_ARGS_MAX 4095
-
-static char   n_buf[CMD_LEN_MAX + 1];
-static int    n_argc = 0;
-static char * n_argv[CMD_ARGS_MAX + 1];
-
-static char   e_buf[8192];
-static char * e_str = NULL;
+const off_t max_script_length = 1073807360; // 1 GiB + 64 KiB
 
 static void usage(void)
 {
 	fprintf(stderr,
-		"Usage: execvp <program> <script>\n"
+		"Usage: execvp <program> [..<args>] <script>\n"
 		"  <script> - file with NUL-separated arguments\n"
 		"Attention: <script> file will be DELETED if it has 'u+w' permission\n"
 	);
 }
+
+static void dump_error(int error_num, const char * where);
+static void dump_path_error(int error_num, const char * where, const char * name);
 
 int main(int argc, char * argv[])
 {
@@ -54,79 +50,107 @@ int main(int argc, char * argv[])
 		return 0;
 	}
 
-	if (argc != 3) {
+	// skip 1st argument
+	argc--; argv++;
+
+	if (argc < 2) {
 		usage();
 		return EAGAIN;
 	}
 
-	memset(&e_buf, 0, sizeof(e_buf));
+	char * program = argv[0];
+	// skip argument
+	argc--; argv++;
 
-	int f_fd = open(argv[2], O_RDONLY | O_NOFOLLOW);
+	char * script = argv[argc - 1];
+	// trim argument
+	argc--;
+
+	int f_fd = open(script, O_RDONLY | O_NOFOLLOW);
 	if (f_fd < 0) {
-		n_ret = errno;
-		e_str = strerror_r(n_ret, e_buf, sizeof(e_buf));
-		fprintf(stderr, "open(2) error %d \"%s\", file %s\n", n_ret, e_str, argv[2]);
+		dump_path_error(errno, "open(2)", script);
 		goto cleanup;
 	}
 
 	struct stat f_stat;
 	memset(&f_stat, 0, sizeof(f_stat));
 	if (fstat(f_fd, &f_stat) < 0) {
-		n_ret = errno;
-		e_str = strerror_r(n_ret, e_buf, sizeof(e_buf));
-		fprintf(stderr, "fstat(2) error %d \"%s\", file %s\n", n_ret, e_str, argv[2]);
+		dump_path_error(errno, "fstat(2)", script);
 		goto cleanup;
 	}
 
 	b_del = (f_stat.st_mode & S_IWUSR) != 0;
 
-	if (f_stat.st_size > CMD_LEN_MAX) {
-		fprintf(stderr, "argument error: file is too big (stat.st_size=%ld): %s\n", f_stat.st_size, argv[2]);
+	if (f_stat.st_size > max_script_length) {
+		fprintf(stderr, "argument error: file is too big (stat.st_size=%ld): %s\n", f_stat.st_size, script);
 		goto cleanup;
 	}
 
-	memset(n_argv, 0, sizeof(n_argv));
-	n_argv[0] = argv[1];
+	int n_argc_base = 1 /* program */ + argc;
+	int n_argc = n_argc_base;
+
+	char * n_buf = NULL;
 
 	if (f_stat.st_size != 0) {
-		memset(&n_buf, 0, sizeof(n_buf));
-		if (f_stat.st_size != read(f_fd, n_buf, f_stat.st_size)) {
-			n_ret = errno;
-			e_str = strerror_r(n_ret, e_buf, sizeof(e_buf));
-			fprintf(stderr, "read(2) error %d: %s\n", n_ret, e_str);
+		n_buf = malloc(f_stat.st_size);
+		if (n_buf == NULL) {
+			dump_error(errno, "malloc(3)");
 			goto cleanup;
 		}
 
-		off_t i = 0;
-		char * t = n_buf;
-		for (i = 0; i < f_stat.st_size; i++) {
-			if (n_buf[i]) {
-				continue;
-			}
-
-			n_argc++;
-			if (n_argc == CMD_ARGS_MAX) {
-				n_ret = E2BIG;
-				fprintf(stderr, "arg count reached limit (%d)\n", CMD_ARGS_MAX);
-				goto cleanup;
-			}
-			n_argv[n_argc] = t;
-			t = &n_buf[i + 1];
+		if (f_stat.st_size != read(f_fd, n_buf, f_stat.st_size)) {
+			dump_path_error(errno, "read(2)", script);
+			goto cleanup;
 		}
+
+		for (off_t i = 0; i < f_stat.st_size; i++) {
+			if (n_buf[i] != 0)
+				continue;
+			n_argc++;
+		}
+
+		if (n_buf[f_stat.st_size - 1] != 0)
+			n_argc++;
 	}
 
 	close(f_fd); f_fd = -1;
 
+    char ** n_argv = calloc(n_argc + /* trailing NULL pointer */ 1, sizeof(size_t));
+	if (n_argv == NULL) {
+		dump_error(errno, "malloc(3)");
+		goto cleanup;
+	}
+
+	n_argv[0] = program;
+	for (int i = 0; i < argc; i++) {
+		n_argv[i + 1] = argv[i];
+	}
+	n_argc = n_argc_base;
+
+	if (f_stat.st_size != 0) {
+		char * t = n_buf;
+		for (off_t i = 0; i < f_stat.st_size; i++) {
+			if (n_buf[i] != 0)
+				continue;
+
+			n_argv[n_argc++] = t;
+			t = &n_buf[i + 1];
+		}
+
+		if (n_buf[f_stat.st_size - 1] != 0) {
+			n_argv[n_argc++] = t;
+		}
+	}
+
 	if (b_del) {
-		unlink(argv[2]);
+		unlink(script);
 		b_del = 0;
 	}
 
 	execvp(n_argv[0], n_argv);
 	// execution follows here in case of errors
 	n_ret = errno;
-	e_str = strerror_r(n_ret, e_buf, sizeof(e_buf));
-	fprintf(stderr, "execvp(3) error %d: %s\n", n_ret, e_str);
+	dump_error(n_ret, "execvp(3)");
 	return n_ret;
 
 cleanup:
@@ -135,8 +159,28 @@ cleanup:
 	}
 
 	if (b_del) {
-		unlink(argv[2]);
+		unlink(script);
 	}
 
 	return n_ret;
+}
+
+static void dump_error(int error_num, const char * where)
+{
+	static char e_buf[8192];
+	char * e_str = NULL;
+
+	memset(&e_buf, 0, sizeof(e_buf));
+	e_str = strerror_r(error_num, e_buf, sizeof(e_buf) - 1);
+	fprintf(stderr, "%s error %d: %s\n", where, error_num, e_str);
+}
+
+static void dump_path_error(int error_num, const char * where, const char * name)
+{
+	static char e_buf[8192];
+	char * e_str = NULL;
+
+	memset(&e_buf, 0, sizeof(e_buf));
+	e_str = strerror_r(error_num, e_buf, sizeof(e_buf) - 1);
+	fprintf(stderr, "%s path '%s' error %d: %s\n", where, name, error_num, e_str);
 }
