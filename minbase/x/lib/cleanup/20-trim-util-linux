@@ -4,6 +4,8 @@
 
 set -ef
 
+: "${XROOT:=/x}"
+
 [ -z "${VERBOSE}" ] || set -xv
 
 ## trim "util-linux" package
@@ -11,7 +13,7 @@ set -ef
 allowed_bin='choom chrt fallocate findmnt flock getopt ionice ipcmk ipcrm ipcs lsipc lslocks lsmem lsns more mountpoint namei nsenter pg prlimit rev setpriv setsid setterm taskset unshare whereis'
 allowed_sbin='runuser'
 dpkg_list='/var/lib/dpkg/info/util-linux.list'
-conf='/x/conf/dpkg-path-filter/util-linux.auto'
+conf="${XROOT}/conf/dpkg-path-filter/util-linux.auto"
 
 if ! [ -s "${dpkg_list}" ] ; then
 	exit 0
@@ -43,7 +45,7 @@ grep -F /sbin/ "${dpkg_list}" \
 } | sort -uV > "$w/new"
 
 ## perform cleanup
-/x/aux/dpkg-path-filter "$w/new"
+"${XROOT}/aux/dpkg-path-filter" "$w/new"
 
 ## save result if applicable
 while : ; do

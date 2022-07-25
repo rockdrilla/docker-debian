@@ -4,6 +4,8 @@
 
 set -ef
 
+: "${XROOT:=/x}"
+
 [ -z "${VERBOSE}" ] || set -xv
 
 ## truncate placeholders (if any)
@@ -11,4 +13,4 @@ find /etc -wholename '/etc/cron*/.placeholder' -type f -exec truncate -s 0 '{}' 
 
 ## remove unwanted cron files (if any)
 unset XGLOB_DIRS XGLOB_PIPE
-/x/glob /etc /x/conf/cleanup/cron </dev/null
+"${XROOT}/glob" /etc "${XROOT}/conf/cleanup/cron" </dev/null

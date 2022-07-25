@@ -6,6 +6,8 @@ if [ $# = 0 ] ; then
 	return
 fi
 
+: "${XROOT:=/x}"
+
 : "${SODEPS_MISSING:=error}"
 
 w=$(mktemp -d) ; : "${w:?}"
@@ -15,12 +17,12 @@ if [ -z "${NPROC}" ] ; then
 	NPROC=$(( NPROC + (NPROC + 1)/2 ))
 fi
 
-/x/bin/ufind -z "$@" > "$w/filelist"
+"${XROOT}/bin/ufind" -z "$@" > "$w/filelist"
 
 mkdir "$w/results"
 
-xargs -0 -r /x/bin/is-elf -z < "$w/filelist" \
-| xargs -0 -r -P "${NPROC}" -I % /x/aux/elf-sodeps % "$w/results/"
+xargs -0 -r "${XROOT}/bin/is-elf" -z < "$w/filelist" \
+| xargs -0 -r -P "${NPROC}" -I % "${XROOT}/aux/elf-sodeps" % "$w/results/"
 
 ## merge results
 find "$w/results/" -type f -exec sort -uV '{}' + > "$w/all"
@@ -50,7 +52,7 @@ ignore)
 	while : ; do
 		[ -s "$w/notfound" ] || break
 
-		find /x/conf/sodeps/ignore.d/ -follow -type f -exec cat {} + \
+		find "${XROOT}/conf/sodeps/ignore.d/" -follow -type f -exec cat {} + \
 		| sort -uV > "$w/rules.ignore"
 		[ -s "$w/rules.ignore" ] || break
 
@@ -64,7 +66,7 @@ ignore)
 	done
 
 	if [ -s "$w/ignored" ] ; then
-		echo '# not found but ignored via /x/conf/sodeps/ignore.d/:'
+		echo "# not found but ignored via ${XROOT}/conf/sodeps/ignore.d/:"
 		sed -E 's/^/#   /' < "$w/ignored"
 	fi 1>&2
 

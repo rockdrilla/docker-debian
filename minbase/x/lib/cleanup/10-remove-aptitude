@@ -4,10 +4,12 @@
 
 set -e
 
+: "${XROOT:=/x}"
+
 [ -z "${VERBOSE}" ] || set -xv
 
 ## remove aptitude (with many thanks)
-Q=1 /x/apt purge aptitude
+Q=1 "${XROOT}/apt" purge aptitude
 
 rm -rf \
   /var/lib/aptitude \

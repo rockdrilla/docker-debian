@@ -4,6 +4,8 @@
 
 set -ef
 
+: "${XROOT:=/x}"
+
 _printf() { env printf "$@" ; }
 _msg() {  _printf "$0: ${__PRINTF_FMT}\n" "$@" 1>&2 ; }
 msg() {
@@ -13,7 +15,7 @@ msg() {
 
 if ! command -v setpriv >/dev/null ; then
 	msg "system warning: \`setpriv' is missing, running with \`su-exec'"
-	exec /x/bin/su-exec "$@"
+	exec "${XROOT}/bin/su-exec" "$@"
 fi
 
 is_option() {
@@ -431,4 +433,4 @@ rm -rf "$w"
 # exec xargs -0 -a "${cmd}" setpriv
 
 ## execvp is responsible for ${cmd} deletion
-exec /x/bin/execvp setpriv "${cmd}"
+exec "${XROOT}/bin/execvp" setpriv "${cmd}"

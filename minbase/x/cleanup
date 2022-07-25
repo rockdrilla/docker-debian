@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # (c) 2021-2022, Konstantin Demin
 
+: "${XROOT:=/x}"
+
 ## reset locale to default one
 unset LANGUAGE LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
 unset LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT LC_IDENTIFICATION
@@ -16,17 +18,17 @@ export TEMP=/tmp
 
 du -xsh /
 
-run-parts ${VERBOSE:+--verbose} --exit-on-error /x/lib/cleanup
+run-parts ${VERBOSE:+--verbose} --exit-on-error "${XROOT}/lib/cleanup"
 r=$?
 
-/x/aux/flush-run
-/x/aux/flush-tmp
+"${XROOT}/aux/flush-run"
+"${XROOT}/aux/flush-tmp"
 
 ## list stalled configs (if any)
-/x/aux/list-stalled-configs
+"${XROOT}/aux/list-stalled-configs"
 
 ## list broken symlinks (if any)
-/x/aux/list-broken-symlinks
+"${XROOT}/aux/list-broken-symlinks"
 
 du -xsh /
 

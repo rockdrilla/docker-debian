@@ -4,13 +4,15 @@
 
 set -f
 
+: "${XROOT:=/x}"
+
 [ -z "${VERBOSE}" ] || set -xv
 
 skip_reconfig='^(base-files)$'
 
 dpkg_info='/var/lib/dpkg/info'
 dpkg_divert='/var/lib/dpkg/diversions'
-shallow_cfg='/x/conf/dpkg-path-filter'
+shallow_cfg="${XROOT}/conf/dpkg-path-filter"
 
 re_path='^\s*(path-((ex|in)clude))(=|\s+)(["'"'"']?)(\S.*)\5\s*$'
 sed_path_own='/'"${re_path}"'/{s//\1=\6/p}'
@@ -169,7 +171,7 @@ sed -i -E 's#(^|/)\*($|/)#\1**\2#g;' "$w/xglob"
 ## dry-run xglob.sh to get list of ready-to-delete files
 unset XGLOB_DIRS
 XGLOB_PIPE=1 \
-/x/glob / < "$w/xglob" > "$w/list"
+"${XROOT}/glob" / < "$w/xglob" > "$w/list"
 rm -f "$w/xglob"
 
 ## nothing to filter at all (again?)
@@ -235,7 +237,7 @@ if [ -z "${SKIP_DPKG_RECONF}" ] ; then
 	rm -f "$w/pkg1" "$w/pkg2" "$w/pkg3"
 
 	## reconfigure affected packages
-	xargs -r /x/quiet dpkg-reconfigure --force < "$w/affected"
+	xargs -r "${XROOT}/quiet" dpkg-reconfigure --force < "$w/affected"
 	r=$?
 fi
 

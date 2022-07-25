@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # (c) 2022, Konstantin Demin
 
+: "${XROOT:=/x}"
+
 : "${bin:=$(basename "$0")}"
-: "${dst_dir:=/x/bin}"
-: "${src_dir:=/x/aux/src/${bin}}"
+: "${dst_dir:=${XROOT}/bin}"
+: "${src_dir:=${XROOT}/aux/src/${bin}}"
 
 if test_bin "${dst_dir}" ; then
 	exit

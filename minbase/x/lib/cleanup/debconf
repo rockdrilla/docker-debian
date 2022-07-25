@@ -4,6 +4,8 @@
 
 set -e
 
+: "${XROOT:=/x}"
+
 [ -z "${VERBOSE}" ] || set -xv
 
 ## remove i18n from templates
@@ -12,6 +14,6 @@ sed -i -E \
 /var/cache/debconf/templates.dat
 
 unset XGLOB_PIPE XGLOB_DIRS
-/x/glob /var/cache/debconf <<-EOF
+"${XROOT}/glob" /var/cache/debconf <<-EOF
 	delete=*-old
 EOF

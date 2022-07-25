@@ -4,11 +4,13 @@
 
 set -ef
 
+: "${XROOT:=/x}"
+
 [ -z "${VERBOSE}" ] || set -xv
 
 unset XGLOB_PIPE
 XGLOB_DIRS=1 \
-/x/glob / - /x/conf/cleanup/python-cache <<-EOF
+"${XROOT}/glob" / - "${XROOT}/conf/cleanup/python-cache" <<-EOF
 	delete=**/*.pyc
 	delete=**/*.pyo
 	delete=**/__pycache__

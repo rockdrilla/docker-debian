@@ -4,6 +4,8 @@
 
 set -e
 
+: "${XROOT:=/x}"
+
 [ -z "${VERBOSE}" ] || set -xv
 
-/x/apt autoremove
+"${XROOT}/apt" autoremove

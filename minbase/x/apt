@@ -4,6 +4,8 @@
 
 set -ef
 
+: "${XROOT:=/x}"
+
 export DEBCONF_NONINTERACTIVE_SEEN=true
 export DEBIAN_FRONTEND=noninteractive
 export DEBIAN_PRIORITY=critical
@@ -70,7 +72,7 @@ apt|aptitude) ;;
 esac
 
 ## make script quiet as possible/desired
-_q() { /x/quiet "$@" ; }
+_q() { "${XROOT}/quiet" "$@" ; }
 _cq=
 case "$Q" in
 0) ;;
@@ -226,7 +228,7 @@ fi
 
 case "${act}" in
 cleanup)
-	/x/lib/cleanup/apt-dpkg-related
+	"${XROOT}/lib/cleanup/apt-dpkg-related"
 ;;
 list-installed)
 	xapt_list_installed

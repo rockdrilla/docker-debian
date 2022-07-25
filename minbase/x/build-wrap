@@ -4,6 +4,8 @@
 
 set -ef
 
+: "${XROOT:=/x}"
+
 ## internal methods
 case "$1" in
 --begin)
@@ -12,19 +14,19 @@ case "$1" in
 
 	w=$(mktemp -d) ; : "${w:?}"
 
-	/x/apt list-installed > "$w/installed.0"
-	/x/apt list-manual    > "$w/manual.0"
+	"${XROOT}/apt" list-installed > "$w/installed.0"
+	"${XROOT}/apt" list-manual    > "$w/manual.0"
 
 	if [ -z "$*" ] ; then
 		echo 'nothing was selected as build-deps' 1>&2
 	else
-		if ! ( /x/apt ${BUILDWRAP_METHOD:-install} "$@" ; ) </dev/null 1>&2 ; then
+		if ! ( "${XROOT}/apt" ${BUILDWRAP_METHOD:-install} "$@" ; ) </dev/null 1>&2 ; then
 			rm -rf "$w"
 			exit 1
 		fi
 
-		/x/apt list-installed > "$w/installed.1"
-		/x/apt list-manual    > "$w/manual.1"
+		"${XROOT}/apt" list-installed > "$w/installed.1"
+		"${XROOT}/apt" list-manual    > "$w/manual.1"
 	fi
 
 	echo "$w"
@@ -53,11 +55,11 @@ case "$1" in
 		set +e
 		grep -Fxv -f "$w/installed.0" "$x" > "$x.manual"
 		set -e
-		xargs -r /x/quiet apt-mark manual < "$x.manual"
+		xargs -r "${XROOT}/quiet" apt-mark manual < "$x.manual"
 	fi
 
-	/x/apt list-installed > "$w/installed.2"
-	/x/apt list-manual    > "$w/manual.2"
+	"${XROOT}/apt" list-installed > "$w/installed.2"
+	"${XROOT}/apt" list-manual    > "$w/manual.2"
 
 	set +e
 
@@ -81,7 +83,7 @@ case "$1" in
 	fi \
 	> "$w/pkg.remove"
 
-	xargs -r /x/apt purge < "$w/pkg.remove" 1>&2
+	xargs -r "${XROOT}/apt" purge < "$w/pkg.remove" 1>&2
 
 	rm -rf "$w"
 	exit 0

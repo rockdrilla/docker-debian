@@ -4,15 +4,17 @@
 
 set -e
 
+: "${XROOT:=/x}"
+
 ## auxiliary packages to be installed AND marked as 'manual'
 ## NB: don't remove "ca-certificates"
 pkg_aux='apt-utils ca-certificates less lsof netbase ncurses-base procps psmisc tzdata vim-tiny'
 
 ## remove "keep" files (if any)
 rm -f /usr/local/share/ca-certificates/.keep
-find /opt /x -name .keep -type f -delete
+find /opt "${XROOT}" -name .keep -type f -delete
 
-_q() { /x/quiet "$@" ; }
+_q() { "${XROOT}/quiet" "$@" ; }
 
 ## $1 - path
 ## $2 - install symlink to another file (optional)
@@ -90,9 +92,9 @@ divert /usr/bin/deb-systemd-helper
 divert /usr/bin/deb-systemd-invoke
 
 ## forced apt/dpkg cleanup
-/x/apt cleanup
+"${XROOT}/apt" cleanup
 ## update package lists and install auxiliary packages
-Q=1 /x/apt install ${pkg_aux}
+Q=1 "${XROOT}/apt" install ${pkg_aux}
 ## mark them as manual
 _q apt-mark manual ${pkg_aux}
 
@@ -105,27 +107,27 @@ find /usr/share/vim/ -name debian.vim \
 | xargs -d '\n' -r touch
 
 ## timezone
-[ -z "${TZ}" ] || /x/tz "${TZ}"
+[ -z "${TZ}" ] || "${XROOT}/tz" "${TZ}"
 
 ## build supplemental utilities
 
-w=$(Q=1 /x/build-wrap --begin dpkg-dev gcc libc6-dev)
+w=$(Q=1 "${XROOT}/build-wrap" --begin dpkg-dev gcc libc6-dev)
 
 ## build dumb-init
-/x/aux/build/dumb-init
+"${XROOT}/aux/build/dumb-init"
 
 ## build su-exec
-/x/aux/build/su-exec
+"${XROOT}/aux/build/su-exec"
 
 ## build own supplemental utilities
-/x/aux/build/execvp
-/x/aux/build/is-elf
-/x/aux/build/ufind
+"${XROOT}/aux/build/execvp"
+"${XROOT}/aux/build/is-elf"
+"${XROOT}/aux/build/ufind"
 
-Q=1 /x/build-wrap --end "$w"
+Q=1 "${XROOT}/build-wrap" --end "$w"
 
 ## list packages with unusual state (if any)
-/x/apt list-martians
+"${XROOT}/apt" list-martians
 
 ## like '/workspace' in kaniko, but less letters to type :)
 install -d -m 01777 /work

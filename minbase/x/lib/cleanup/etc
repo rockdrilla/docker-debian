@@ -4,11 +4,13 @@
 
 set -ef
 
+: "${XROOT:=/x}"
+
 [ -z "${VERBOSE}" ] || set -xv
 
 unset XGLOB_PIPE
 XGLOB_DIRS=1 \
-/x/glob /etc - /x/conf/cleanup/etc <<-EOF
+"${XROOT}/glob" /etc - "${XROOT}/conf/cleanup/etc" <<-EOF
 	delete=.pwd.lock
 	delete=group-
 	delete=gshadow-

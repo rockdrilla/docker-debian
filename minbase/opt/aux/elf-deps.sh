@@ -4,12 +4,14 @@
 
 set -ef
 
+: "${XROOT:=/x}"
+
 [ $# -ne 0 ]
 
 has_file=1
 if ! command -v file >/dev/null ; then
 	has_file=0
-	/x/apt install file >/dev/null 2>&1
+	"${XROOT}/apt" install file >/dev/null 2>&1
 fi
 
 ldd_out=$(mktemp)
@@ -54,7 +56,7 @@ grep -Fv ' => not found' \
 rm "${ldd_out}"
 
 if [ ${has_file} = 0 ] ; then
-	/x/apt remove file >/dev/null 2>/dev/null
+	"${XROOT}/apt" remove file >/dev/null 2>/dev/null
 fi
 
 ldd_unresolved=0
