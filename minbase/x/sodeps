@@ -19,7 +19,7 @@ fi
 
 mkdir "$w/results"
 
-xargs -0 -r -n 1 /x/bin/is-elf < "$w/filelist" \
+xargs -0 -r /x/bin/is-elf -z < "$w/filelist" \
 | xargs -0 -r -P "${NPROC}" -I % /x/aux/elf-sodeps % "$w/results/"
 
 ## merge results
