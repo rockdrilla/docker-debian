@@ -21,8 +21,8 @@ fi
 
 mkdir "$w/results"
 
-xargs -0 -r "${XROOT}/bin/is-elf" -z < "$w/filelist" \
-| xargs -0 -r -P "${NPROC}" -I % "${XROOT}/aux/elf-sodeps" % "$w/results/"
+xargs -0 -r -n 64 "${XROOT}/bin/is-elf" -z < "$w/filelist" \
+| env ELF_SODEPS_OUT="$w/results/" xargs -0 -r -P "${NPROC}" -n 64 "${XROOT}/aux/elf-sodeps"
 
 ## merge results
 find "$w/results/" -type f -exec sort -uV '{}' + > "$w/all"

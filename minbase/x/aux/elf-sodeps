@@ -10,22 +10,16 @@ set_output() {
 	fi
 }
 
-if [ -n "$2" ] ; then
-	out=$(set_output "$2")
+if [ -n "${ELF_SODEPS_OUT}" ] ; then
+	out=$(set_output "${ELF_SODEPS_OUT}")
 	: "${out:?}"
 	exec 1> "${out}"
 fi
 
-t=$(mktemp) ; : "${t:?}"
-
-ldd "$1" 2>/dev/null \
-| grep -F ' => ' > "$t"
-
-if [ -s "$t" ] ; then
-	sed -En "
-	/^.+ => (.+) \\(\\S+\\)\$/    {s##1|$1|\\1#p}
-	/^\\s*(\\S.+) => not found\$/ {s##0|$1|\\1#p}
-	" < "$t"
-fi
-
-rm -f "$t"
+for i ; do
+	ldd "$i" 2>/dev/null \
+	| sed -En '
+	/^.+ => (.+) \(\S+\)$/     {s##1|'"$i"'|\1#p}
+	/^\s*(\S.+) => not found$/ {s##0|'"$i"'|\1#p}
+	'
+done
